@@ -35,7 +35,6 @@
     overflow-x: hidden;
   }
 
-  /* Scanline overlay */
   body::before {
     content: '';
     position: fixed;
@@ -77,7 +76,7 @@
 
   .hero {
     position: relative;
-    padding: 80px 0 60px;
+    padding: 60px 0 60px;
     text-align: center;
     overflow: hidden;
     border-bottom: 1px solid var(--border);
@@ -139,7 +138,6 @@
     padding: 0 24px;
   }
 
-  /* Alert/info boxes */
   .alert {
     border-left: 3px solid var(--accent);
     background: rgba(0,212,170,0.05);
@@ -171,7 +169,6 @@
   .alert.warn .alert-title { color: var(--accent2); }
   .alert.danger .alert-title { color: var(--red); }
 
-  /* Section styling */
   .section {
     padding: 56px 0;
     border-bottom: 1px solid var(--border);
@@ -205,7 +202,6 @@
 
   p { margin-bottom: 16px; color: var(--text); }
 
-  /* Terminal block */
   .terminal {
     background: #060809;
     border: 1px solid var(--border);
@@ -224,18 +220,12 @@
   }
 
   .terminal-dots { display: flex; gap: 6px; }
-  .terminal-dots span {
-    width: 10px; height: 10px; border-radius: 50%;
-  }
+  .terminal-dots span { width: 10px; height: 10px; border-radius: 50%; }
   .terminal-dots .r { background: #ff5f57; }
   .terminal-dots .y { background: #febc2e; }
   .terminal-dots .g { background: #28c840; }
 
-  .terminal-title {
-    font-size: 11px;
-    color: var(--muted);
-    letter-spacing: 1px;
-  }
+  .terminal-title { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
 
   .terminal-body {
     padding: 20px 20px;
@@ -254,7 +244,6 @@
   .path { color: #d2a8ff; }
   .red-txt { color: var(--red); }
 
-  /* Finding cards */
   .findings-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -269,7 +258,6 @@
     padding: 20px;
     position: relative;
     overflow: hidden;
-    transition: border-color 0.2s;
   }
 
   .finding-card::before {
@@ -300,7 +288,6 @@
     line-height: 1.4;
   }
 
-  /* Process tree */
   .proc-tree {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -317,7 +304,6 @@
   .proc-malicious { color: var(--red); font-weight: 700; }
   .proc-sus { color: var(--yellow); }
 
-  /* IOC table */
   .ioc-table {
     width: 100%;
     border-collapse: collapse;
@@ -359,7 +345,6 @@
   .badge-green { background: rgba(0,212,170,0.1); color: var(--accent); border: 1px solid rgba(0,212,170,0.25); }
   .badge-purple { background: rgba(124,92,191,0.15); color: #a78bfa; border: 1px solid rgba(124,92,191,0.3); }
 
-  /* Timeline */
   .timeline { margin: 28px 0; }
 
   .tl-item {
@@ -414,17 +399,12 @@
   .tl-title { font-weight: 700; color: var(--heading); margin-bottom: 4px; }
   .tl-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
 
-  /* Footer */
   .footer {
     padding: 48px 0;
     text-align: center;
   }
 
-  .footer-sig {
-    font-size: 12px;
-    color: var(--muted);
-    margin-bottom: 8px;
-  }
+  .footer-sig { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
 
   .footer-name {
     font-family: var(--sans);
@@ -467,16 +447,44 @@
   }
 
   @media (max-width: 600px) {
-    .tl-time { min-width: 100px; font-size: 10px; }
+    .tl-time { min-width: 80px; font-size: 10px; }
     .findings-grid { grid-template-columns: 1fr; }
+    .container { padding: 0 16px; }
+    .hero { padding: 40px 0 40px; }
+    .section { padding: 40px 0; }
+
+    /* IOC table — horizontal scroll */
+    .ioc-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .ioc-table { min-width: 520px; }
+
+    /* Terminal — horizontal scroll */
+    .terminal-body { overflow-x: auto; -webkit-overflow-scrolling: touch; font-size: 11px; }
+
+    /* Timeline — stack cleanly */
+    .tl-item { gap: 12px; }
+    .tl-time { min-width: 0; white-space: normal; }
+
+    /* Highlight box */
+    .highlight-box { padding: 16px; }
+
+    /* Proc tree */
+    .proc-tree { padding: 16px; font-size: 11px; }
+
+    /* Back bar */
+    .back-bar { padding: 12px 16px; }
+
+    h2 { font-size: 20px; }
+    h3 { font-size: 16px; }
   }
 </style>
 </head>
 <body>
+
+<!-- BACK BAR -->
 <div class="back-bar">
   <a href="./index.html">← Back to Writeups</a>
 </div>
-  
+
 <div class="hero">
   <div class="container">
     <div class="tag-line">TryHackMe · Volatility · Memory Forensics</div>
@@ -497,16 +505,11 @@
 
 <div class="container">
 
-  <!-- INTRO -->
   <div class="section">
     <div class="section-num">00 — Background</div>
     <h2>The Case: Chain Ransomware Attack</h2>
-    <p>
-      A chain ransomware attack is hitting multiple companies internationally. The decryption key has already been retrieved — but the job isn't done. A thorough <strong>post-incident analysis</strong> is required to understand the full scope of the compromise, attacker TTPs, and persistence mechanisms.
-    </p>
-    <p>
-      We've been handed a <strong>raw memory dump</strong> from an infected Windows machine. Our mission: reconstruct exactly what happened inside this machine's RAM, identify the malicious process, trace its lineage, and surface all indicators of compromise.
-    </p>
+    <p>A chain ransomware attack is hitting multiple companies internationally. The decryption key has already been retrieved — but the job isn't done. A thorough <strong>post-incident analysis</strong> is required to understand the full scope of the compromise, attacker TTPs, and persistence mechanisms.</p>
+    <p>We've been handed a <strong>raw memory dump</strong> from an infected Windows machine. Our mission: reconstruct exactly what happened inside this machine's RAM, identify the malicious process, trace its lineage, and surface all indicators of compromise.</p>
 
     <div class="alert">
       <div class="alert-title">🔬 What We're Working With</div>
@@ -528,18 +531,13 @@
         <div class="finding-value">2017-05-12 · 21:26:32</div>
       </div>
     </div>
-
     <p>The date is significant — <strong>May 12, 2017</strong> is the exact date the WannaCry global outbreak began. This isn't coincidence. This is ground zero.</p>
   </div>
 
-  <!-- STEP 1: PSLIST/PSSCAN -->
   <div class="section">
     <div class="section-num">01 — Process Discovery</div>
     <h2>Running pslist &amp; psscan</h2>
-
-    <p>
-      We start with the two foundational process listing plugins. <code>pslist</code> walks the active process linked list — which can be manipulated by malware. <code>psscan</code> scans raw memory for <code>EPROCESS</code> structures, surfacing processes that may be hiding from the standard list.
-    </p>
+    <p>We start with the two foundational process listing plugins. <code>pslist</code> walks the active process linked list — which can be manipulated by malware. <code>psscan</code> scans raw memory for <code>EPROCESS</code> structures, surfacing processes that may be hiding from the standard list.</p>
 
     <div class="terminal">
       <div class="terminal-header">
@@ -553,20 +551,18 @@
         <div><span class="prompt">$</span> <span class="cmd">volatility</span> <span class="flag">-f</span> <span class="arg">memory.dmp</span> <span class="flag">--profile=</span><span class="arg">WinXPSP3x86</span> <span class="cmd">psscan</span></div>
         <br>
         <div><span class="comment"># Both revealed suspicious activities centered around:</span></div>
-        <div><span class="out">Process: <span class="pid">@WanaDecryptor@.exe</span>  PID: <span class="pid">740</span>  PPID: <span class="pid">1940</span></span></div>
+        <div><span class="out">Process: <span class="pid">@<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="3d6a5c535c79585e4f444d49524f7d13584558">[email&#160;protected]</a></span>  PID: <span class="pid">740</span>  PPID: <span class="pid">1940</span></span></div>
         <div><span class="out">Create Time: <span class="pid">2017-05-12 21:22:22</span></span></div>
       </div>
     </div>
 
     <div class="alert warn">
       <div class="alert-title">⚠️ Suspicious Process Found</div>
-      <code>@WanaDecryptor@.exe</code> — the name alone is a dead giveaway. This is the WannaCry ransomware payload masquerading under its own decryptor UI. PID <strong>740</strong>, parent PID <strong>1940</strong>.
+      <code>@<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="491e2827280d2c2a3b30393d263b09672c312c">[email&#160;protected]</a></code> — the name alone is a dead giveaway. This is the WannaCry ransomware payload masquerading under its own decryptor UI. PID <strong>740</strong>, parent PID <strong>1940</strong>.
     </div>
 
     <h3>The Critical Note — Evasion Attempt</h3>
-    <p>
-      Here's where it gets interesting. <code>psscan</code> revealed that the <em>same process</em> <code>@WanaDecryptor@</code> was <strong>also running under PID 424 and PID 576</strong> — but these were <strong>hidden from pslist</strong>. This is a classic DKOM (Direct Kernel Object Manipulation) evasion technique.
-    </p>
+    <p>Here's where it gets interesting. <code>psscan</code> revealed that the <em>same process</em> <code>@WanaDecryptor@</code> was <strong>also running under PID 424 and PID 576</strong> — but these were <strong>hidden from pslist</strong>. This is a classic DKOM (Direct Kernel Object Manipulation) evasion technique.</p>
 
     <div class="alert danger">
       <div class="alert-title">🚨 DKOM Evasion Detected</div>
@@ -574,14 +570,10 @@
     </div>
   </div>
 
-  <!-- STEP 2: DLLLIST -->
   <div class="section">
     <div class="section-num">02 — DLL Analysis</div>
     <h2>Using dlllist to Map the Binary</h2>
-
-    <p>
-      With PID 740 confirmed as our target, we use the <code>dlllist</code> plugin filtered on that PID to enumerate every loaded DLL and locate the main binary on disk.
-    </p>
+    <p>With PID 740 confirmed as our target, we use the <code>dlllist</code> plugin filtered on that PID to enumerate every loaded DLL and locate the main binary on disk.</p>
 
     <div class="terminal">
       <div class="terminal-header">
@@ -592,7 +584,7 @@
         <div><span class="prompt">$</span> <span class="cmd">volatility</span> <span class="flag">-f</span> <span class="arg">memory.dmp</span> <span class="flag">--profile=</span><span class="arg">WinXPSP3x86</span> <span class="cmd">dlllist</span> <span class="flag">-p</span> <span class="arg">740</span></div>
         <br>
         <div><span class="comment"># Key finding — main binary location:</span></div>
-        <div><span class="path">C:\Intel\ivecuqmanpnirkt615\@WanaDecryptor@.exe</span></div>
+        <div><span class="path">C:\Intel\ivecuqmanpnirkt615\@<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="2077414e41644543525950544f52600e455845">[email&#160;protected]</a></span></div>
         <br>
         <div><span class="comment"># Non-standard path. Not in System32 or Program Files.</span></div>
         <div><span class="comment"># Dropped under C:\Intel\ — a common staging directory for WannaCry.</span></div>
@@ -604,19 +596,15 @@
 
     <div class="highlight-box">
       <strong style="color: var(--heading);">Key Artifact:</strong> The binary was dropped at<br>
-      <code style="font-size:13px; color: var(--accent);">C:\Intel\ivecuqmanpnirkt615\@WanaDecryptor@.exe</code><br><br>
+      <code style="font-size:13px; color: var(--accent);">C:\Intel\ivecuqmanpnirkt615\@<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="6631070807220305141f161209142648031e03">[email&#160;protected]</a></code><br><br>
       This non-standard path under <code>C:\Intel\</code> is a well-known WannaCry staging location. The randomized subdirectory name (<code>ivecuqmanpnirkt615</code>) is generated per-infection to evade static detection.
     </div>
   </div>
 
-  <!-- STEP 3: PSTREE -->
   <div class="section">
     <div class="section-num">03 — Process Lineage</div>
     <h2>Tracing the Parent with pstree</h2>
-
-    <p>
-      Knowing the parent PID is 1940, we use <code>pstree</code> to visualize the full process hierarchy and identify <em>who spawned the ransomware</em>.
-    </p>
+    <p>Knowing the parent PID is 1940, we use <code>pstree</code> to visualize the full process hierarchy and identify <em>who spawned the ransomware</em>.</p>
 
     <div class="terminal">
       <div class="terminal-header">
@@ -638,28 +626,19 @@
         <div><span class="proc-arrow">├─</span> <span class="proc-sus">mctlmom.exe</span></div>
         <div><span class="proc-arrow">└─</span> <span class="proc-sus">tasksche.exe</span> <span style="color:var(--muted); font-size:11px;">(PID 1940) ← PPID of malware</span></div>
         <div class="proc-indent">
-          <div><span class="proc-arrow">└─</span> <span class="proc-malicious">@WanaDecryptor@.exe</span> <span style="color:var(--muted); font-size:11px;">(PID 740) ← RANSOMWARE</span></div>
+          <div><span class="proc-arrow">└─</span> <span class="proc-malicious">@<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="e9be888788ad8c8a9b90999d869ba9c78c918c">[email&#160;protected]</a></span> <span style="color:var(--muted); font-size:11px;">(PID 740) ← RANSOMWARE</span></div>
         </div>
       </div>
     </div>
 
-    <p>
-      <code>tasksche.exe</code> is WannaCry's <strong>task scheduler component</strong> — it's the orchestrator that manages file encryption tasks and spawns the decryptor UI. Its presence as the parent process confirms the infection chain is fully established.
-    </p>
-
-    <p>
-      Notably, <code>tasksche.exe</code> itself spawned from <code>explorer.exe</code>, which suggests the initial infection vector likely involved user interaction — possibly executing a malicious file dropped via the EternalBlue exploit, which then injected into or launched from the Explorer context.
-    </p>
+    <p><code>tasksche.exe</code> is WannaCry's <strong>task scheduler component</strong> — it's the orchestrator that manages file encryption tasks and spawns the decryptor UI. Its presence as the parent process confirms the infection chain is fully established.</p>
+    <p>Notably, <code>tasksche.exe</code> itself spawned from <code>explorer.exe</code>, which suggests the initial infection vector likely involved user interaction — possibly executing a malicious file dropped via the EternalBlue exploit, which then injected into or launched from the Explorer context.</p>
   </div>
 
-  <!-- STEP 4: MEMORY DUMP + VIRUSTOTAL -->
   <div class="section">
     <div class="section-num">04 — Hash &amp; Threat Intelligence</div>
     <h2>Memory Dump → SHA256 → VirusTotal</h2>
-
-    <p>
-      We dump the process memory for PID 740, generate a SHA256 hash, and look it up on VirusTotal. Matching our previous indicators (DLL load pattern, binary path, process name) confirms our identification.
-    </p>
+    <p>We dump the process memory for PID 740, generate a SHA256 hash, and look it up on VirusTotal. Matching our previous indicators (DLL load pattern, binary path, process name) confirms our identification.</p>
 
     <div class="terminal">
       <div class="terminal-header">
@@ -677,9 +656,7 @@
     </div>
 
     <h3>DLL Deep Dive — ws2_32.dll</h3>
-    <p>
-      Going back to the DLL list for PID 740 and cross-referencing each library reveals something key: <code>ws2_32.dll</code> (the Windows Socket API) was loaded by the decryptor process.
-    </p>
+    <p>Going back to the DLL list for PID 740 and cross-referencing each library reveals something key: <code>ws2_32.dll</code> (the Windows Socket API) was loaded by the decryptor process.</p>
 
     <div class="alert">
       <div class="alert-title">🔌 Network Activity Indicator</div>
@@ -687,14 +664,10 @@
     </div>
   </div>
 
-  <!-- STEP 5: HANDLES / MUTEX -->
   <div class="section">
     <div class="section-num">05 — Mutex Identification</div>
     <h2>windows.handles on tasksche.exe</h2>
-
-    <p>
-      The final step: running the <code>windows.handles</code> plugin against the parent process <code>tasksche.exe</code> to enumerate all kernel objects it holds — files, registry keys, events, and critically, <strong>mutexes</strong>.
-    </p>
+    <p>The final step: running the <code>windows.handles</code> plugin against the parent process <code>tasksche.exe</code> to enumerate all kernel objects it holds — files, registry keys, events, and critically, <strong>mutexes</strong>.</p>
 
     <div class="terminal">
       <div class="terminal-header">
@@ -717,52 +690,37 @@
     </div>
   </div>
 
-  <!-- TIMELINE -->
   <div class="section">
     <div class="section-num">06 — Reconstruction</div>
     <h2>Attack Timeline</h2>
 
     <div class="timeline">
       <div class="tl-item">
-        <div class="tl-line">
-          <div class="tl-dot yellow"></div>
-          <div class="tl-connector"></div>
-        </div>
+        <div class="tl-line"><div class="tl-dot yellow"></div><div class="tl-connector"></div></div>
         <div class="tl-time">2017-05-12 · Unknown</div>
         <div class="tl-content">
           <div class="tl-title">Initial Compromise via EternalBlue</div>
           <div class="tl-desc">SMB exploit delivers WannaCry payload. tasksche.exe drops into C:\Intel\ directory and begins orchestrating the attack.</div>
         </div>
       </div>
-
       <div class="tl-item">
-        <div class="tl-line">
-          <div class="tl-dot red"></div>
-          <div class="tl-connector"></div>
-        </div>
+        <div class="tl-line"><div class="tl-dot red"></div><div class="tl-connector"></div></div>
         <div class="tl-time">2017-05-12 · 21:22:22</div>
         <div class="tl-content">
-          <div class="tl-title">@WanaDecryptor@.exe Spawned</div>
+          <div class="tl-title">@<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="a4f3c5cac5e0c1c7d6ddd4d0cbd6e48ac1dcc1">[email&#160;protected]</a> Spawned</div>
           <div class="tl-desc">tasksche.exe (PID 1940) launches the ransomware UI/payload at PID 740. Encryption begins. ws2_32.dll loaded for C2 and propagation.</div>
         </div>
       </div>
-
       <div class="tl-item">
-        <div class="tl-line">
-          <div class="tl-dot purple"></div>
-          <div class="tl-connector"></div>
-        </div>
+        <div class="tl-line"><div class="tl-dot purple"></div><div class="tl-connector"></div></div>
         <div class="tl-time">2017-05-12 · Active</div>
         <div class="tl-content">
           <div class="tl-title">DKOM Evasion — Ghost PIDs</div>
           <div class="tl-desc">Additional instances of the ransomware run under PIDs 424 &amp; 576 — unlinked from the active process list to evade live forensics tools.</div>
         </div>
       </div>
-
       <div class="tl-item">
-        <div class="tl-line">
-          <div class="tl-dot"></div>
-        </div>
+        <div class="tl-line"><div class="tl-dot"></div></div>
         <div class="tl-time">2017-05-12 · 21:26:32</div>
         <div class="tl-content">
           <div class="tl-title">Memory Dump Captured</div>
@@ -772,97 +730,45 @@
     </div>
   </div>
 
-  <!-- IOC SUMMARY -->
   <div class="section">
     <div class="section-num">07 — IOC Summary</div>
     <h2>Indicators of Compromise</h2>
-
+    <div class="ioc-table-wrap">
     <table class="ioc-table">
       <thead>
         <tr>
-          <th>Indicator</th>
-          <th>Value</th>
-          <th>Type</th>
-          <th>Confidence</th>
+          <th>Indicator</th><th>Value</th><th>Type</th><th>Confidence</th>
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td>Malicious Process</td>
-          <td><code>@WanaDecryptor@.exe</code></td>
-          <td><span class="badge badge-red">Process</span></td>
-          <td><span class="badge badge-red">HIGH</span></td>
-        </tr>
-        <tr>
-          <td>Process IDs</td>
-          <td><code>740, 424, 576</code></td>
-          <td><span class="badge badge-yellow">PID</span></td>
-          <td><span class="badge badge-red">HIGH</span></td>
-        </tr>
-        <tr>
-          <td>Binary Path</td>
-          <td><code>C:\Intel\ivecuqmanpnirkt615\@WanaDecryptor@.exe</code></td>
-          <td><span class="badge badge-purple">File Path</span></td>
-          <td><span class="badge badge-red">HIGH</span></td>
-        </tr>
-        <tr>
-          <td>Parent Process</td>
-          <td><code>tasksche.exe</code> (PID 1940)</td>
-          <td><span class="badge badge-yellow">Process</span></td>
-          <td><span class="badge badge-red">HIGH</span></td>
-        </tr>
-        <tr>
-          <td>Mutex</td>
-          <td><code>MsWinZonesCacheCounterMutexA</code></td>
-          <td><span class="badge badge-red">Mutex</span></td>
-          <td><span class="badge badge-red">HIGH</span></td>
-        </tr>
-        <tr>
-          <td>Network DLL</td>
-          <td><code>ws2_32.dll</code> loaded by decryptor</td>
-          <td><span class="badge badge-green">DLL</span></td>
-          <td><span class="badge badge-yellow">MEDIUM</span></td>
-        </tr>
-        <tr>
-          <td>Evasion Technique</td>
-          <td>DKOM — process hidden from pslist</td>
-          <td><span class="badge badge-purple">TTP</span></td>
-          <td><span class="badge badge-red">HIGH</span></td>
-        </tr>
-        <tr>
-          <td>Infection Date</td>
-          <td>2017-05-12 (Day 0 of global outbreak)</td>
-          <td><span class="badge badge-green">Timestamp</span></td>
-          <td><span class="badge badge-red">HIGH</span></td>
-        </tr>
+        <tr><td>Malicious Process</td><td><code>@<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="2b7c4a454a6f4e4859525b5f44596b054e534e">[email&#160;protected]</a></code></td><td><span class="badge badge-red">Process</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Process IDs</td><td><code>740, 424, 576</code></td><td><span class="badge badge-yellow">PID</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Binary Path</td><td><code>C:\Intel\ivecuqmanpnirkt615\@<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="c493a5aaa580a1a7b6bdb4b0abb684eaa1bca1">[email&#160;protected]</a></code></td><td><span class="badge badge-purple">File Path</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Parent Process</td><td><code>tasksche.exe</code> (PID 1940)</td><td><span class="badge badge-yellow">Process</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Mutex</td><td><code>MsWinZonesCacheCounterMutexA</code></td><td><span class="badge badge-red">Mutex</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Network DLL</td><td><code>ws2_32.dll</code> loaded by decryptor</td><td><span class="badge badge-green">DLL</span></td><td><span class="badge badge-yellow">MEDIUM</span></td></tr>
+        <tr><td>Evasion Technique</td><td>DKOM — process hidden from pslist</td><td><span class="badge badge-purple">TTP</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Infection Date</td><td>2017-05-12 (Day 0 of global outbreak)</td><td><span class="badge badge-green">Timestamp</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
       </tbody>
     </table>
+    </div>
   </div>
 
-  <!-- LESSONS -->
   <div class="section">
     <div class="section-num">08 — Takeaways</div>
     <h2>What This Case Teaches Us</h2>
 
     <h3>Always Cross-Validate pslist with psscan</h3>
-    <p>
-      <code>pslist</code> alone would have missed PIDs 424 and 576. Always run both, diff the output. Any process visible in <code>psscan</code> but not <code>pslist</code> is a major red flag for rootkit-level evasion.
-    </p>
+    <p><code>pslist</code> alone would have missed PIDs 424 and 576. Always run both, diff the output. Any process visible in <code>psscan</code> but not <code>pslist</code> is a major red flag for rootkit-level evasion.</p>
 
     <h3>Mutexes Are Definitive Fingerprints</h3>
-    <p>
-      Malware families reuse mutexes across campaigns. <code>MsWinZonesCacheCounterMutexA</code> is documented in threat intel for WannaCry — finding it in handles output closes the case conclusively. Always check mutants/mutexes via <code>handles -t Mutant</code>.
-    </p>
+    <p>Malware families reuse mutexes across campaigns. <code>MsWinZonesCacheCounterMutexA</code> is documented in threat intel for WannaCry — finding it in handles output closes the case conclusively. Always check mutants/mutexes via <code>handles -t Mutant</code>.</p>
 
     <h3>DLL Loads Tell a Story</h3>
-    <p>
-      A "decryptor UI" loading <code>ws2_32.dll</code> is behaviorally anomalous. DLL analysis isn't just about finding the binary — it's about understanding <em>what capabilities the process had</em> at runtime.
-    </p>
+    <p>A "decryptor UI" loading <code>ws2_32.dll</code> is behaviorally anomalous. DLL analysis isn't just about finding the binary — it's about understanding <em>what capabilities the process had</em> at runtime.</p>
 
     <h3>Context Is Everything</h3>
-    <p>
-      The process name, the path, the parent, the DLLs, the mutex — no single artifact is conclusive. Memory forensics is about layering evidence until the picture is undeniable. Each plugin is a lens; use all of them.
-    </p>
+    <p>The process name, the path, the parent, the DLLs, the mutex — no single artifact is conclusive. Memory forensics is about layering evidence until the picture is undeniable. Each plugin is a lens; use all of them.</p>
 
     <div class="highlight-box" style="margin-top: 32px;">
       <div style="font-family: var(--sans); font-size: 15px; font-weight: 700; color: var(--heading); margin-bottom: 10px;">Volatility Plugin Cheatsheet — This Case</div>
