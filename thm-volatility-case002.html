@@ -551,14 +551,14 @@
         <div><span class="prompt">$</span> <span class="cmd">volatility</span> <span class="flag">-f</span> <span class="arg">memory.dmp</span> <span class="flag">--profile=</span><span class="arg">WinXPSP3x86</span> <span class="cmd">psscan</span></div>
         <br>
         <div><span class="comment"># Both revealed suspicious activities centered around:</span></div>
-        <div><span class="out">Process: <span class="pid">@<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="3d6a5c535c79585e4f444d49524f7d13584558">[email&#160;protected]</a></span>  PID: <span class="pid">740</span>  PPID: <span class="pid">1940</span></span></div>
+        <div><span class="out">Process: <span class="pid">@WanaDecryptor@</span>  PID: <span class="pid">740</span>  PPID: <span class="pid">1940</span></span></div>
         <div><span class="out">Create Time: <span class="pid">2017-05-12 21:22:22</span></span></div>
       </div>
     </div>
 
     <div class="alert warn">
       <div class="alert-title">⚠️ Suspicious Process Found</div>
-      <code>@<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="491e2827280d2c2a3b30393d263b09672c312c">[email&#160;protected]</a></code> — the name alone is a dead giveaway. This is the WannaCry ransomware payload masquerading under its own decryptor UI. PID <strong>740</strong>, parent PID <strong>1940</strong>.
+      <code>@WanaDecryptor@</code> — the name alone is a dead giveaway. This is the WannaCry ransomware payload masquerading under its own decryptor UI. PID <strong>740</strong>, parent PID <strong>1940</strong>.
     </div>
 
     <h3>The Critical Note — Evasion Attempt</h3>
@@ -584,7 +584,7 @@
         <div><span class="prompt">$</span> <span class="cmd">volatility</span> <span class="flag">-f</span> <span class="arg">memory.dmp</span> <span class="flag">--profile=</span><span class="arg">WinXPSP3x86</span> <span class="cmd">dlllist</span> <span class="flag">-p</span> <span class="arg">740</span></div>
         <br>
         <div><span class="comment"># Key finding — main binary location:</span></div>
-        <div><span class="path">C:\Intel\ivecuqmanpnirkt615\@<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="2077414e41644543525950544f52600e455845">[email&#160;protected]</a></span></div>
+        <div><span class="path">C:\Intel\ivecuqmanpnirkt615\@WanaDecryptor@.exe</span></div>
         <br>
         <div><span class="comment"># Non-standard path. Not in System32 or Program Files.</span></div>
         <div><span class="comment"># Dropped under C:\Intel\ — a common staging directory for WannaCry.</span></div>
@@ -596,7 +596,7 @@
 
     <div class="highlight-box">
       <strong style="color: var(--heading);">Key Artifact:</strong> The binary was dropped at<br>
-      <code style="font-size:13px; color: var(--accent);">C:\Intel\ivecuqmanpnirkt615\@<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="6631070807220305141f161209142648031e03">[email&#160;protected]</a></code><br><br>
+      <code style="font-size:13px; color: var(--accent);">C:\Intel\ivecuqmanpnirkt615\@WanaDecryptor@.exe</code><br><br>
       This non-standard path under <code>C:\Intel\</code> is a well-known WannaCry staging location. The randomized subdirectory name (<code>ivecuqmanpnirkt615</code>) is generated per-infection to evade static detection.
     </div>
   </div>
@@ -626,7 +626,7 @@
         <div><span class="proc-arrow">├─</span> <span class="proc-sus">mctlmom.exe</span></div>
         <div><span class="proc-arrow">└─</span> <span class="proc-sus">tasksche.exe</span> <span style="color:var(--muted); font-size:11px;">(PID 1940) ← PPID of malware</span></div>
         <div class="proc-indent">
-          <div><span class="proc-arrow">└─</span> <span class="proc-malicious">@<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="e9be888788ad8c8a9b90999d869ba9c78c918c">[email&#160;protected]</a></span> <span style="color:var(--muted); font-size:11px;">(PID 740) ← RANSOMWARE</span></div>
+          <div><span class="proc-arrow">└─</span> <span class="proc-malicious">@WanaDecryptor@</span> <span style="color:var(--muted); font-size:11px;">(PID 740) ← RANSOMWARE</span></div>
         </div>
       </div>
     </div>
@@ -707,7 +707,7 @@
         <div class="tl-line"><div class="tl-dot red"></div><div class="tl-connector"></div></div>
         <div class="tl-time">2017-05-12 · 21:22:22</div>
         <div class="tl-content">
-          <div class="tl-title">@<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="a4f3c5cac5e0c1c7d6ddd4d0cbd6e48ac1dcc1">[email&#160;protected]</a> Spawned</div>
+          <div class="tl-title">@WanaDecryptor@ Spawned</div>
           <div class="tl-desc">tasksche.exe (PID 1940) launches the ransomware UI/payload at PID 740. Encryption begins. ws2_32.dll loaded for C2 and propagation.</div>
         </div>
       </div>
@@ -741,9 +741,9 @@
         </tr>
       </thead>
       <tbody>
-        <tr><td>Malicious Process</td><td><code>@<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="2b7c4a454a6f4e4859525b5f44596b054e534e">[email&#160;protected]</a></code></td><td><span class="badge badge-red">Process</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Malicious Process</td><td><code>@WanaDecryptor</code></td><td><span class="badge badge-red">Process</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
         <tr><td>Process IDs</td><td><code>740, 424, 576</code></td><td><span class="badge badge-yellow">PID</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
-        <tr><td>Binary Path</td><td><code>C:\Intel\ivecuqmanpnirkt615\@<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="c493a5aaa580a1a7b6bdb4b0abb684eaa1bca1">[email&#160;protected]</a></code></td><td><span class="badge badge-purple">File Path</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Binary Path</td><td><code>C:\Intel\ivecuqmanpnirkt615\@WanaDecryptor@.exe</code></td><td><span class="badge badge-purple">File Path</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
         <tr><td>Parent Process</td><td><code>tasksche.exe</code> (PID 1940)</td><td><span class="badge badge-yellow">Process</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
         <tr><td>Mutex</td><td><code>MsWinZonesCacheCounterMutexA</code></td><td><span class="badge badge-red">Mutex</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
         <tr><td>Network DLL</td><td><code>ws2_32.dll</code> loaded by decryptor</td><td><span class="badge badge-green">DLL</span></td><td><span class="badge badge-yellow">MEDIUM</span></td></tr>
