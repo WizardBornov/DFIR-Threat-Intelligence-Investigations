@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THM Volatility Case 002 — WannaCry Memory Forensics</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #0f1318;
+    --surface2: #151b22;
+    --border: #1e2730;
+    --accent: #00d4aa;
+    --accent2: #ff6b35;
+    --accent3: #7c5cbf;
+    --text: #c9d1d9;
+    --muted: #586069;
+    --heading: #e6edf3;
+    --red: #ff4757;
+    --yellow: #ffd32a;
+    --green: #00d4aa;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 15px;
+    line-height: 1.75;
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,212,170,0.015) 2px,
+      rgba(0,212,170,0.015) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  .hero {
+    position: relative;
+    padding: 80px 0 60px;
+    text-align: center;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,212,170,0.08) 0%, transparent 70%);
+  }
+
+  .tag-line {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    opacity: 0.8;
+  }
+
+  .hero h1 {
+    font-family: var(--sans);
+    font-size: clamp(32px, 5vw, 58px);
+    font-weight: 800;
+    color: var(--heading);
+    line-height: 1.15;
+    margin-bottom: 16px;
+    position: relative;
+  }
+
+  .hero h1 .accent { color: var(--accent); }
+  .hero h1 .red { color: var(--red); }
+
+  .hero-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 32px;
+    letter-spacing: 1px;
+  }
+
+  .meta-strip {
+    display: inline-flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    justify-content: center;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .meta-strip span { display: flex; align-items: center; gap: 6px; }
+  .meta-strip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* Alert/info boxes */
+  .alert {
+    border-left: 3px solid var(--accent);
+    background: rgba(0,212,170,0.05);
+    padding: 16px 20px;
+    margin: 28px 0;
+    border-radius: 0 6px 6px 0;
+    font-size: 13px;
+  }
+
+  .alert.warn {
+    border-color: var(--accent2);
+    background: rgba(255,107,53,0.06);
+  }
+
+  .alert.danger {
+    border-color: var(--red);
+    background: rgba(255,71,87,0.06);
+  }
+
+  .alert-title {
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    color: var(--accent);
+  }
+
+  .alert.warn .alert-title { color: var(--accent2); }
+  .alert.danger .alert-title { color: var(--red); }
+
+  /* Section styling */
+  .section {
+    padding: 56px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-num {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+
+  h2 {
+    font-family: var(--sans);
+    font-size: clamp(22px, 3vw, 30px);
+    font-weight: 700;
+    color: var(--heading);
+    margin-bottom: 20px;
+    line-height: 1.3;
+  }
+
+  h3 {
+    font-family: var(--sans);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--heading);
+    margin: 32px 0 14px;
+  }
+
+  p { margin-bottom: 16px; color: var(--text); }
+
+  /* Terminal block */
+  .terminal {
+    background: #060809;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 24px 0;
+    overflow: hidden;
+  }
+
+  .terminal-header {
+    background: var(--surface2);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .terminal-dots { display: flex; gap: 6px; }
+  .terminal-dots span {
+    width: 10px; height: 10px; border-radius: 50%;
+  }
+  .terminal-dots .r { background: #ff5f57; }
+  .terminal-dots .y { background: #febc2e; }
+  .terminal-dots .g { background: #28c840; }
+
+  .terminal-title {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .terminal-body {
+    padding: 20px 20px;
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-x: auto;
+  }
+
+  .cmd { color: #79b8ff; }
+  .flag { color: var(--accent); }
+  .arg { color: #ffab70; }
+  .out { color: #85e89d; }
+  .comment { color: var(--muted); font-style: italic; }
+  .prompt { color: var(--accent); user-select: none; }
+  .pid { color: var(--yellow); }
+  .path { color: #d2a8ff; }
+  .red-txt { color: var(--red); }
+
+  /* Finding cards */
+  .findings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin: 24px 0;
+  }
+
+  .finding-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .finding-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .finding-card.green::before { background: var(--accent); }
+  .finding-card.orange::before { background: var(--accent2); }
+  .finding-card.purple::before { background: var(--accent3); }
+  .finding-card.red::before { background: var(--red); }
+
+  .finding-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .finding-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--heading);
+    word-break: break-all;
+    line-height: 1.4;
+  }
+
+  /* Process tree */
+  .proc-tree {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px 28px;
+    margin: 24px 0;
+    font-size: 13px;
+    line-height: 2;
+  }
+
+  .proc-node { color: var(--heading); font-weight: 500; }
+  .proc-indent { padding-left: 20px; border-left: 1px solid var(--border); margin-left: 8px; }
+  .proc-arrow { color: var(--muted); }
+  .proc-malicious { color: var(--red); font-weight: 700; }
+  .proc-sus { color: var(--yellow); }
+
+  /* IOC table */
+  .ioc-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 13px;
+  }
+
+  .ioc-table th {
+    background: var(--surface2);
+    color: var(--accent);
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .ioc-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(30,39,48,0.5);
+    vertical-align: top;
+  }
+
+  .ioc-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .badge-red { background: rgba(255,71,87,0.15); color: var(--red); border: 1px solid rgba(255,71,87,0.3); }
+  .badge-yellow { background: rgba(255,211,42,0.1); color: var(--yellow); border: 1px solid rgba(255,211,42,0.25); }
+  .badge-green { background: rgba(0,212,170,0.1); color: var(--accent); border: 1px solid rgba(0,212,170,0.25); }
+  .badge-purple { background: rgba(124,92,191,0.15); color: #a78bfa; border: 1px solid rgba(124,92,191,0.3); }
+
+  /* Timeline */
+  .timeline { margin: 28px 0; }
+
+  .tl-item {
+    display: flex;
+    gap: 20px;
+    padding-bottom: 28px;
+    position: relative;
+  }
+
+  .tl-item:last-child { padding-bottom: 0; }
+
+  .tl-line {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    width: 20px;
+  }
+
+  .tl-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+
+  .tl-dot.red { background: var(--red); }
+  .tl-dot.yellow { background: var(--yellow); }
+  .tl-dot.purple { background: var(--accent3); }
+
+  .tl-connector {
+    width: 1px;
+    flex: 1;
+    background: var(--border);
+    margin-top: 4px;
+  }
+
+  .tl-time {
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 1px;
+    white-space: nowrap;
+    margin-top: 2px;
+    min-width: 150px;
+    flex-shrink: 0;
+  }
+
+  .tl-content { flex: 1; }
+  .tl-title { font-weight: 700; color: var(--heading); margin-bottom: 4px; }
+  .tl-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* Footer */
+  .footer {
+    padding: 48px 0;
+    text-align: center;
+  }
+
+  .footer-sig {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .footer-name {
+    font-family: var(--sans);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  code {
+    background: var(--surface2);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: #d2a8ff;
+    border: 1px solid var(--border);
+  }
+
+  .highlight-box {
+    background: linear-gradient(135deg, rgba(0,212,170,0.06), rgba(124,92,191,0.06));
+    border: 1px solid rgba(0,212,170,0.2);
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin: 28px 0;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  .cursor {
+    display: inline-block;
+    width: 8px;
+    height: 15px;
+    background: var(--accent);
+    vertical-align: middle;
+    animation: blink 1.2s infinite;
+    margin-left: 2px;
+  }
+
+  @media (max-width: 600px) {
+    .tl-time { min-width: 100px; font-size: 10px; }
+    .findings-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="container">
+    <div class="tag-line">TryHackMe · Volatility · Memory Forensics</div>
+    <h1>
+      <span class="red">WannaCry</span> in RAM —<br>
+      <span class="accent">Dissecting a Ransomware</span><br>
+      Memory Dump
+    </h1>
+    <div class="hero-sub">THM Volatility Case 002 · Full Walkthrough</div>
+    <div class="meta-strip">
+      <span><span class="dot"></span> Windows x86 · XP SP3</span>
+      <span><span class="dot"></span> Volatility 2/3</span>
+      <span><span class="dot"></span> DFIR · Malware Analysis</span>
+      <span><span class="dot"></span> WannaCry Ransomware</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- INTRO -->
+  <div class="section">
+    <div class="section-num">00 — Background</div>
+    <h2>The Case: Chain Ransomware Attack</h2>
+    <p>
+      A chain ransomware attack is hitting multiple companies internationally. The decryption key has already been retrieved — but the job isn't done. A thorough <strong>post-incident analysis</strong> is required to understand the full scope of the compromise, attacker TTPs, and persistence mechanisms.
+    </p>
+    <p>
+      We've been handed a <strong>raw memory dump</strong> from an infected Windows machine. Our mission: reconstruct exactly what happened inside this machine's RAM, identify the malicious process, trace its lineage, and surface all indicators of compromise.
+    </p>
+
+    <div class="alert">
+      <div class="alert-title">🔬 What We're Working With</div>
+      Memory forensics lets us see what was running <em>at the moment of capture</em> — including processes that may have already cleaned themselves off disk. RAM doesn't lie.
+    </div>
+
+    <h3>System Information</h3>
+    <div class="findings-grid">
+      <div class="finding-card green">
+        <div class="finding-label">OS</div>
+        <div class="finding-value">Windows x86</div>
+      </div>
+      <div class="finding-card orange">
+        <div class="finding-label">Build Number</div>
+        <div class="finding-value">2600.xpsp_sp3-260.130704-0421</div>
+      </div>
+      <div class="finding-card purple">
+        <div class="finding-label">Memory Dump Taken At</div>
+        <div class="finding-value">2017-05-12 · 21:26:32</div>
+      </div>
+    </div>
+
+    <p>The date is significant — <strong>May 12, 2017</strong> is the exact date the WannaCry global outbreak began. This isn't coincidence. This is ground zero.</p>
+  </div>
+
+  <!-- STEP 1: PSLIST/PSSCAN -->
+  <div class="section">
+    <div class="section-num">01 — Process Discovery</div>
+    <h2>Running pslist &amp; psscan</h2>
+
+    <p>
+      We start with the two foundational process listing plugins. <code>pslist</code> walks the active process linked list — which can be manipulated by malware. <code>psscan</code> scans raw memory for <code>EPROCESS</code> structures, surfacing processes that may be hiding from the standard list.
+    </p>
+
+    <div class="terminal">
+      <div class="terminal-header">
+        <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+        <div class="terminal-title">volatility — process enumeration</div>
+      </div>
+      <div class="terminal-body">
+        <div><span class="prompt">$</span> <span class="cmd">volatility</span> <span class="flag">-f</span> <span class="arg">memory.dmp</span> <span class="flag">--profile=</span><span class="arg">WinXPSP3x86</span> <span class="cmd">pslist</span></div>
+        <br>
+        <div><span class="comment"># Cross-verify with pool-tag scanner (catches hidden/unlinked processes)</span></div>
+        <div><span class="prompt">$</span> <span class="cmd">volatility</span> <span class="flag">-f</span> <span class="arg">memory.dmp</span> <span class="flag">--profile=</span><span class="arg">WinXPSP3x86</span> <span class="cmd">psscan</span></div>
+        <br>
+        <div><span class="comment"># Both revealed suspicious activities centered around:</span></div>
+        <div><span class="out">Process: <span class="pid">@WanaDecryptor@.exe</span>  PID: <span class="pid">740</span>  PPID: <span class="pid">1940</span></span></div>
+        <div><span class="out">Create Time: <span class="pid">2017-05-12 21:22:22</span></span></div>
+      </div>
+    </div>
+
+    <div class="alert warn">
+      <div class="alert-title">⚠️ Suspicious Process Found</div>
+      <code>@WanaDecryptor@.exe</code> — the name alone is a dead giveaway. This is the WannaCry ransomware payload masquerading under its own decryptor UI. PID <strong>740</strong>, parent PID <strong>1940</strong>.
+    </div>
+
+    <h3>The Critical Note — Evasion Attempt</h3>
+    <p>
+      Here's where it gets interesting. <code>psscan</code> revealed that the <em>same process</em> <code>@WanaDecryptor@</code> was <strong>also running under PID 424 and PID 576</strong> — but these were <strong>hidden from pslist</strong>. This is a classic DKOM (Direct Kernel Object Manipulation) evasion technique.
+    </p>
+
+    <div class="alert danger">
+      <div class="alert-title">🚨 DKOM Evasion Detected</div>
+      PIDs 424 &amp; 576 showed up in psscan but NOT in pslist. The process had unlinked itself from the active process list — a known anti-forensics technique. This is a <strong>possible evasion attempt</strong> to hide persistence from live analysis tools.
+    </div>
+  </div>
+
+  <!-- STEP 2: DLLLIST -->
+  <div class="section">
+    <div class="section-num">02 — DLL Analysis</div>
+    <h2>Using dlllist to Map the Binary</h2>
+
+    <p>
+      With PID 740 confirmed as our target, we use the <code>dlllist</code> plugin filtered on that PID to enumerate every loaded DLL and locate the main binary on disk.
+    </p>
+
+    <div class="terminal">
+      <div class="terminal-header">
+        <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+        <div class="terminal-title">volatility — dll enumeration for PID 740</div>
+      </div>
+      <div class="terminal-body">
+        <div><span class="prompt">$</span> <span class="cmd">volatility</span> <span class="flag">-f</span> <span class="arg">memory.dmp</span> <span class="flag">--profile=</span><span class="arg">WinXPSP3x86</span> <span class="cmd">dlllist</span> <span class="flag">-p</span> <span class="arg">740</span></div>
+        <br>
+        <div><span class="comment"># Key finding — main binary location:</span></div>
+        <div><span class="path">C:\Intel\ivecuqmanpnirkt615\@WanaDecryptor@.exe</span></div>
+        <br>
+        <div><span class="comment"># Non-standard path. Not in System32 or Program Files.</span></div>
+        <div><span class="comment"># Dropped under C:\Intel\ — a common staging directory for WannaCry.</span></div>
+        <br>
+        <div><span class="comment"># Also found during further DLL analysis (Step 4):</span></div>
+        <div><span class="out">ws2_32.dll</span> <span class="comment">— loaded for socket communication (C2 / propagation)</span></div>
+      </div>
+    </div>
+
+    <div class="highlight-box">
+      <strong style="color: var(--heading);">Key Artifact:</strong> The binary was dropped at<br>
+      <code style="font-size:13px; color: var(--accent);">C:\Intel\ivecuqmanpnirkt615\@WanaDecryptor@.exe</code><br><br>
+      This non-standard path under <code>C:\Intel\</code> is a well-known WannaCry staging location. The randomized subdirectory name (<code>ivecuqmanpnirkt615</code>) is generated per-infection to evade static detection.
+    </div>
+  </div>
+
+  <!-- STEP 3: PSTREE -->
+  <div class="section">
+    <div class="section-num">03 — Process Lineage</div>
+    <h2>Tracing the Parent with pstree</h2>
+
+    <p>
+      Knowing the parent PID is 1940, we use <code>pstree</code> to visualize the full process hierarchy and identify <em>who spawned the ransomware</em>.
+    </p>
+
+    <div class="terminal">
+      <div class="terminal-header">
+        <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+        <div class="terminal-title">volatility — process tree</div>
+      </div>
+      <div class="terminal-body">
+        <div><span class="prompt">$</span> <span class="cmd">volatility</span> <span class="flag">-f</span> <span class="arg">memory.dmp</span> <span class="flag">--profile=</span><span class="arg">WinXPSP3x86</span> <span class="cmd">pstree</span></div>
+        <br>
+        <div><span class="comment"># Referencing PPID 1940 revealed the parent process:</span></div>
+        <div><span class="out">Parent Process: <span class="red-txt">tasksche.exe</span>  (PID: 1940)</span></div>
+      </div>
+    </div>
+
+    <h3>Process Hierarchy</h3>
+    <div class="proc-tree">
+      <div><span class="proc-node">explorer.exe</span></div>
+      <div class="proc-indent">
+        <div><span class="proc-arrow">├─</span> <span class="proc-sus">mctlmom.exe</span></div>
+        <div><span class="proc-arrow">└─</span> <span class="proc-sus">tasksche.exe</span> <span style="color:var(--muted); font-size:11px;">(PID 1940) ← PPID of malware</span></div>
+        <div class="proc-indent">
+          <div><span class="proc-arrow">└─</span> <span class="proc-malicious">@WanaDecryptor@.exe</span> <span style="color:var(--muted); font-size:11px;">(PID 740) ← RANSOMWARE</span></div>
+        </div>
+      </div>
+    </div>
+
+    <p>
+      <code>tasksche.exe</code> is WannaCry's <strong>task scheduler component</strong> — it's the orchestrator that manages file encryption tasks and spawns the decryptor UI. Its presence as the parent process confirms the infection chain is fully established.
+    </p>
+
+    <p>
+      Notably, <code>tasksche.exe</code> itself spawned from <code>explorer.exe</code>, which suggests the initial infection vector likely involved user interaction — possibly executing a malicious file dropped via the EternalBlue exploit, which then injected into or launched from the Explorer context.
+    </p>
+  </div>
+
+  <!-- STEP 4: MEMORY DUMP + VIRUSTOTAL -->
+  <div class="section">
+    <div class="section-num">04 — Hash &amp; Threat Intelligence</div>
+    <h2>Memory Dump → SHA256 → VirusTotal</h2>
+
+    <p>
+      We dump the process memory for PID 740, generate a SHA256 hash, and look it up on VirusTotal. Matching our previous indicators (DLL load pattern, binary path, process name) confirms our identification.
+    </p>
+
+    <div class="terminal">
+      <div class="terminal-header">
+        <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+        <div class="terminal-title">volatility — memory dump + hash</div>
+      </div>
+      <div class="terminal-body">
+        <div><span class="prompt">$</span> <span class="cmd">volatility</span> <span class="flag">-f</span> <span class="arg">memory.dmp</span> <span class="flag">--profile=</span><span class="arg">WinXPSP3x86</span> <span class="cmd">memdump</span> <span class="flag">-p</span> <span class="arg">740</span> <span class="flag">--dump-dir</span> <span class="arg">./dump/</span></div>
+        <br>
+        <div><span class="prompt">$</span> <span class="cmd">sha256sum</span> <span class="arg">dump/740.dmp</span></div>
+        <br>
+        <div><span class="comment"># Upload hash to VirusTotal → confirmed WannaCry indicators match</span></div>
+        <div><span class="comment"># Previous analysis artifacts correlate → high-confidence attribution</span></div>
+      </div>
+    </div>
+
+    <h3>DLL Deep Dive — ws2_32.dll</h3>
+    <p>
+      Going back to the DLL list for PID 740 and cross-referencing each library reveals something key: <code>ws2_32.dll</code> (the Windows Socket API) was loaded by the decryptor process.
+    </p>
+
+    <div class="alert">
+      <div class="alert-title">🔌 Network Activity Indicator</div>
+      <code>ws2_32.dll</code> handles socket operations — raw TCP/UDP. A ransomware "decryptor UI" has no legitimate reason to need socket access. This indicates the process was performing <strong>network communication</strong>, consistent with WannaCry's known C2 check-in and lateral movement via SMB/EternalBlue propagation.
+    </div>
+  </div>
+
+  <!-- STEP 5: HANDLES / MUTEX -->
+  <div class="section">
+    <div class="section-num">05 — Mutex Identification</div>
+    <h2>windows.handles on tasksche.exe</h2>
+
+    <p>
+      The final step: running the <code>windows.handles</code> plugin against the parent process <code>tasksche.exe</code> to enumerate all kernel objects it holds — files, registry keys, events, and critically, <strong>mutexes</strong>.
+    </p>
+
+    <div class="terminal">
+      <div class="terminal-header">
+        <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+        <div class="terminal-title">volatility — handle enumeration on tasksche.exe</div>
+      </div>
+      <div class="terminal-body">
+        <div><span class="prompt">$</span> <span class="cmd">volatility</span> <span class="flag">-f</span> <span class="arg">memory.dmp</span> <span class="flag">--profile=</span><span class="arg">WinXPSP3x86</span> <span class="cmd">handles</span> <span class="flag">-p</span> <span class="arg">1940</span> <span class="flag">-t</span> <span class="arg">Mutant</span></div>
+        <br>
+        <div><span class="comment"># Output revealed a known WannaCry mutex:</span></div>
+        <div><span class="red-txt">MsWinZonesCacheCounterMutexA</span></div>
+        <br>
+        <div><span class="comment"># This is a documented IOC for WannaCry / WanaCrypt0r 2.0</span></div>
+      </div>
+    </div>
+
+    <div class="alert danger">
+      <div class="alert-title">🔑 Known Malware Mutex — Confirmed IOC</div>
+      <strong>MsWinZonesCacheCounterMutexA</strong> is a documented indicator of compromise for WannaCry. Malware uses mutexes as a "marker" — to check if the system is already infected and avoid double-encryption. Finding this mutex in memory is <strong>definitive confirmation</strong> of WannaCry ransomware presence.
+    </div>
+  </div>
+
+  <!-- TIMELINE -->
+  <div class="section">
+    <div class="section-num">06 — Reconstruction</div>
+    <h2>Attack Timeline</h2>
+
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-line">
+          <div class="tl-dot yellow"></div>
+          <div class="tl-connector"></div>
+        </div>
+        <div class="tl-time">2017-05-12 · Unknown</div>
+        <div class="tl-content">
+          <div class="tl-title">Initial Compromise via EternalBlue</div>
+          <div class="tl-desc">SMB exploit delivers WannaCry payload. tasksche.exe drops into C:\Intel\ directory and begins orchestrating the attack.</div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-line">
+          <div class="tl-dot red"></div>
+          <div class="tl-connector"></div>
+        </div>
+        <div class="tl-time">2017-05-12 · 21:22:22</div>
+        <div class="tl-content">
+          <div class="tl-title">@WanaDecryptor@.exe Spawned</div>
+          <div class="tl-desc">tasksche.exe (PID 1940) launches the ransomware UI/payload at PID 740. Encryption begins. ws2_32.dll loaded for C2 and propagation.</div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-line">
+          <div class="tl-dot purple"></div>
+          <div class="tl-connector"></div>
+        </div>
+        <div class="tl-time">2017-05-12 · Active</div>
+        <div class="tl-content">
+          <div class="tl-title">DKOM Evasion — Ghost PIDs</div>
+          <div class="tl-desc">Additional instances of the ransomware run under PIDs 424 &amp; 576 — unlinked from the active process list to evade live forensics tools.</div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-line">
+          <div class="tl-dot"></div>
+        </div>
+        <div class="tl-time">2017-05-12 · 21:26:32</div>
+        <div class="tl-content">
+          <div class="tl-title">Memory Dump Captured</div>
+          <div class="tl-desc">Raw memory acquisition performed. All process artifacts, DLL maps, handles, and mutexes preserved for forensic analysis.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IOC SUMMARY -->
+  <div class="section">
+    <div class="section-num">07 — IOC Summary</div>
+    <h2>Indicators of Compromise</h2>
+
+    <table class="ioc-table">
+      <thead>
+        <tr>
+          <th>Indicator</th>
+          <th>Value</th>
+          <th>Type</th>
+          <th>Confidence</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Malicious Process</td>
+          <td><code>@WanaDecryptor@.exe</code></td>
+          <td><span class="badge badge-red">Process</span></td>
+          <td><span class="badge badge-red">HIGH</span></td>
+        </tr>
+        <tr>
+          <td>Process IDs</td>
+          <td><code>740, 424, 576</code></td>
+          <td><span class="badge badge-yellow">PID</span></td>
+          <td><span class="badge badge-red">HIGH</span></td>
+        </tr>
+        <tr>
+          <td>Binary Path</td>
+          <td><code>C:\Intel\ivecuqmanpnirkt615\@WanaDecryptor@.exe</code></td>
+          <td><span class="badge badge-purple">File Path</span></td>
+          <td><span class="badge badge-red">HIGH</span></td>
+        </tr>
+        <tr>
+          <td>Parent Process</td>
+          <td><code>tasksche.exe</code> (PID 1940)</td>
+          <td><span class="badge badge-yellow">Process</span></td>
+          <td><span class="badge badge-red">HIGH</span></td>
+        </tr>
+        <tr>
+          <td>Mutex</td>
+          <td><code>MsWinZonesCacheCounterMutexA</code></td>
+          <td><span class="badge badge-red">Mutex</span></td>
+          <td><span class="badge badge-red">HIGH</span></td>
+        </tr>
+        <tr>
+          <td>Network DLL</td>
+          <td><code>ws2_32.dll</code> loaded by decryptor</td>
+          <td><span class="badge badge-green">DLL</span></td>
+          <td><span class="badge badge-yellow">MEDIUM</span></td>
+        </tr>
+        <tr>
+          <td>Evasion Technique</td>
+          <td>DKOM — process hidden from pslist</td>
+          <td><span class="badge badge-purple">TTP</span></td>
+          <td><span class="badge badge-red">HIGH</span></td>
+        </tr>
+        <tr>
+          <td>Infection Date</td>
+          <td>2017-05-12 (Day 0 of global outbreak)</td>
+          <td><span class="badge badge-green">Timestamp</span></td>
+          <td><span class="badge badge-red">HIGH</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- LESSONS -->
+  <div class="section">
+    <div class="section-num">08 — Takeaways</div>
+    <h2>What This Case Teaches Us</h2>
+
+    <h3>Always Cross-Validate pslist with psscan</h3>
+    <p>
+      <code>pslist</code> alone would have missed PIDs 424 and 576. Always run both, diff the output. Any process visible in <code>psscan</code> but not <code>pslist</code> is a major red flag for rootkit-level evasion.
+    </p>
+
+    <h3>Mutexes Are Definitive Fingerprints</h3>
+    <p>
+      Malware families reuse mutexes across campaigns. <code>MsWinZonesCacheCounterMutexA</code> is documented in threat intel for WannaCry — finding it in handles output closes the case conclusively. Always check mutants/mutexes via <code>handles -t Mutant</code>.
+    </p>
+
+    <h3>DLL Loads Tell a Story</h3>
+    <p>
+      A "decryptor UI" loading <code>ws2_32.dll</code> is behaviorally anomalous. DLL analysis isn't just about finding the binary — it's about understanding <em>what capabilities the process had</em> at runtime.
+    </p>
+
+    <h3>Context Is Everything</h3>
+    <p>
+      The process name, the path, the parent, the DLLs, the mutex — no single artifact is conclusive. Memory forensics is about layering evidence until the picture is undeniable. Each plugin is a lens; use all of them.
+    </p>
+
+    <div class="highlight-box" style="margin-top: 32px;">
+      <div style="font-family: var(--sans); font-size: 15px; font-weight: 700; color: var(--heading); margin-bottom: 10px;">Volatility Plugin Cheatsheet — This Case</div>
+      <div style="font-size: 13px; line-height: 2.2; color: var(--text);">
+        <code>imageinfo / windows.info</code> — Profile detection &amp; system metadata<br>
+        <code>pslist</code> — Active process list (can be evaded)<br>
+        <code>psscan</code> — Pool-tag scan; catches unlinked/hidden processes<br>
+        <code>pstree</code> — Visualize parent-child relationships<br>
+        <code>dlllist -p [PID]</code> — Enumerate loaded DLLs + binary path<br>
+        <code>memdump -p [PID]</code> — Dump process memory for hashing/AV scan<br>
+        <code>handles -p [PID] -t Mutant</code> — Extract mutexes from process handles<br>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-sig">Written as a walkthrough for THM Volatility Case 002 by</div>
+    <div class="footer-name">WizB</div>
+    <div style="font-size:11px; color: var(--muted); margin-top: 8px; letter-spacing: 1px;">
+      DFIR · OSINT · NIT Silchar ECE<span class="cursor"></span>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
