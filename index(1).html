@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WizB — DFIR & OSINT Writeups</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,300&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #0f1318;
+    --surface2: #151b22;
+    --border: #1e2730;
+    --accent: #00d4aa;
+    --accent2: #ff6b35;
+    --accent3: #7c5cbf;
+    --text: #c9d1d9;
+    --muted: #586069;
+    --heading: #e6edf3;
+    --red: #ff4757;
+    --yellow: #ffd32a;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.7;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* Scanlines */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,212,170,0.012) 2px,
+      rgba(0,212,170,0.012) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* Animated grid background */
+  .bg-grid {
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,170,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,170,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .bg-glow {
+    position: fixed;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,212,170,0.04) 0%, transparent 70%);
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    background: rgba(10,12,15,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .nav-brand {
+    font-family: var(--sans);
+    font-weight: 800;
+    font-size: 18px;
+    color: var(--accent);
+    text-decoration: none;
+    letter-spacing: -0.5px;
+  }
+
+  .nav-brand span { color: var(--muted); font-weight: 400; font-size: 13px; margin-left: 8px; font-family: var(--mono); }
+
+  .nav-links {
+    display: flex;
+    gap: 24px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-size: 12px;
+    color: var(--muted);
+    text-decoration: none;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--accent); }
+
+  /* HERO */
+  .hero {
+    position: relative;
+    z-index: 1;
+    padding: 140px 32px 80px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .hero-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 28px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .hero-eyebrow-line {
+    width: 40px;
+    height: 1px;
+    background: var(--accent);
+  }
+
+  .hero-eyebrow span {
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .hero h1 {
+    font-family: var(--sans);
+    font-size: clamp(40px, 6vw, 72px);
+    font-weight: 800;
+    color: var(--heading);
+    line-height: 1.05;
+    margin-bottom: 24px;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+
+  .hero h1 .dim { color: var(--muted); font-weight: 400; }
+  .hero h1 .acc { color: var(--accent); }
+
+  .hero-desc {
+    font-size: 14px;
+    color: var(--muted);
+    max-width: 500px;
+    line-height: 1.8;
+    margin-bottom: 40px;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+
+  .hero-stats {
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .stat-num {
+    font-family: var(--sans);
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--heading);
+  }
+
+  .stat-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .stat-divider {
+    width: 1px;
+    background: var(--border);
+    align-self: stretch;
+  }
+
+  /* TERMINAL INTRO */
+  .terminal-intro {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto 64px;
+    padding: 0 32px;
+    animation: fadeUp 0.6s 0.4s ease both;
+  }
+
+  .term-box {
+    background: #060809;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .term-header {
+    background: var(--surface2);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .term-dots { display: flex; gap: 6px; }
+  .term-dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .term-dots .r { background: #ff5f57; }
+  .term-dots .y { background: #febc2e; }
+  .term-dots .g { background: #28c840; }
+  .term-title { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+
+  .term-body {
+    padding: 20px 24px;
+    font-size: 13px;
+    line-height: 2;
+  }
+
+  .t-prompt { color: var(--accent); }
+  .t-cmd { color: #79b8ff; }
+  .t-out { color: #85e89d; }
+  .t-str { color: #ffab70; }
+  .t-comment { color: var(--muted); font-style: italic; }
+  .t-cursor {
+    display: inline-block;
+    width: 8px; height: 14px;
+    background: var(--accent);
+    vertical-align: middle;
+    animation: blink 1.1s infinite;
+  }
+
+  /* POSTS SECTION */
+  .posts-section {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 32px 80px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+  }
+
+  .section-title {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-title::before {
+    content: '';
+    display: block;
+    width: 24px;
+    height: 1px;
+    background: var(--accent);
+  }
+
+  /* Filter tabs */
+  .filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .filter-btn:hover, .filter-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,212,170,0.06);
+  }
+
+  /* Post cards */
+  .posts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .post-card {
+    display: grid;
+    grid-template-columns: 120px 1fr auto;
+    align-items: start;
+    gap: 24px;
+    padding: 24px 28px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+    background: var(--surface);
+    border-color: var(--border);
+    margin-bottom: 8px;
+  }
+
+  .post-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    background: var(--accent);
+    transform: scaleY(0);
+    transition: transform 0.2s;
+    transform-origin: bottom;
+  }
+
+  .post-card:hover {
+    border-color: rgba(0,212,170,0.25);
+    background: rgba(0,212,170,0.03);
+    transform: translateX(4px);
+  }
+
+  .post-card:hover::before { transform: scaleY(1); }
+
+  .post-date {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    padding-top: 3px;
+    white-space: nowrap;
+  }
+
+  .post-main { flex: 1; }
+
+  .post-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+
+  .tag {
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-weight: 700;
+  }
+
+  .tag-dfir { background: rgba(0,212,170,0.1); color: var(--accent); border: 1px solid rgba(0,212,170,0.2); }
+  .tag-osint { background: rgba(124,92,191,0.12); color: #a78bfa; border: 1px solid rgba(124,92,191,0.25); }
+  .tag-malware { background: rgba(255,71,87,0.1); color: var(--red); border: 1px solid rgba(255,71,87,0.2); }
+  .tag-thm { background: rgba(255,107,53,0.1); color: var(--accent2); border: 1px solid rgba(255,107,53,0.2); }
+  .tag-ctf { background: rgba(255,211,42,0.08); color: var(--yellow); border: 1px solid rgba(255,211,42,0.2); }
+  .tag-writeup { background: rgba(30,39,48,0.8); color: var(--muted); border: 1px solid var(--border); }
+
+  .post-title {
+    font-family: var(--sans);
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--heading);
+    line-height: 1.3;
+    margin-bottom: 8px;
+    transition: color 0.2s;
+  }
+
+  .post-card:hover .post-title { color: var(--accent); }
+
+  .post-excerpt {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .post-arrow {
+    color: var(--muted);
+    font-size: 18px;
+    padding-top: 4px;
+    transition: all 0.2s;
+  }
+
+  .post-card:hover .post-arrow {
+    color: var(--accent);
+    transform: translateX(4px);
+  }
+
+  /* Upcoming / placeholder card */
+  .post-card.coming-soon {
+    opacity: 0.4;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .post-card.coming-soon::before { display: none; }
+
+  .coming-badge {
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    border: 1px dashed var(--border);
+    padding: 2px 8px;
+    border-radius: 3px;
+  }
+
+  /* About strip */
+  .about-strip {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto 80px;
+    padding: 0 32px;
+  }
+
+  .about-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 32px 36px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 32px;
+    align-items: center;
+  }
+
+  .about-label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  .about-name {
+    font-family: var(--sans);
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--heading);
+    margin-bottom: 8px;
+  }
+
+  .about-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.8;
+    max-width: 480px;
+  }
+
+  .social-links {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .social-link {
+    font-size: 11px;
+    color: var(--muted);
+    text-decoration: none;
+    letter-spacing: 1px;
+    transition: color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .social-link:hover { color: var(--accent); }
+  .social-link::before { content: '→'; font-size: 10px; }
+
+  /* Footer */
+  footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 28px 32px;
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: gap;
+  }
+
+  .footer-left {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .footer-left strong { color: var(--accent); }
+
+  .footer-right {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  @media (max-width: 640px) {
+    .post-card { grid-template-columns: 1fr; gap: 12px; }
+    .post-date { display: none; }
+    .about-card { grid-template-columns: 1fr; }
+    .social-links { flex-direction: row; flex-wrap: wrap; }
+    .hero h1 { font-size: 36px; }
+    nav { padding: 0 16px; }
+    .nav-links { gap: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+
+<nav>
+  <a class="nav-brand" href="/">WizB<span>/ writeups</span></a>
+  <ul class="nav-links">
+    <li><a href="#posts">Posts</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="https://github.com/yourusername" target="_blank">GitHub</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-eyebrow">
+    <div class="hero-eyebrow-line"></div>
+    <span>DFIR · OSINT · CTF Writeups</span>
+  </div>
+  <h1>
+    Digging through<br>
+    <span class="acc">memory dumps</span><br>
+    <span class="dim">and leaving notes.</span>
+  </h1>
+  <p class="hero-desc">
+    Field notes from a B.Tech ECE student at NIT Silchar — chasing adversaries through RAM, logs, and open sources. Building toward Threat Intelligence.
+  </p>
+  <div class="hero-stats">
+    <div class="stat">
+      <span class="stat-num">01</span>
+      <span class="stat-label">Writeup</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat">
+      <span class="stat-num">DFIR</span>
+      <span class="stat-label">Primary Focus</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat">
+      <span class="stat-num">∞</span>
+      <span class="stat-label">Rabbit Holes</span>
+    </div>
+  </div>
+</section>
+
+<!-- TERMINAL INTRO -->
+<div class="terminal-intro">
+  <div class="term-box">
+    <div class="term-header">
+      <div class="term-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="term-title">wizb@blog ~ whoami</div>
+    </div>
+    <div class="term-body">
+      <div><span class="t-prompt">$</span> <span class="t-cmd">cat</span> <span class="t-str">about.txt</span></div>
+      <div style="padding-left:16px; color: var(--text);">
+        <span class="t-out">Name</span>      : Bornov Shyam Kalita (WizB)<br>
+        <span class="t-out">Role</span>      : ECE Student · Aspiring DFIR Analyst<br>
+        <span class="t-out">Interests</span> : Memory Forensics, OSINT, Malware Analysis<br>
+        <span class="t-out">Goal</span>      : Threat Intelligence Analyst by end of college
+      </div>
+      <br>
+      <div><span class="t-prompt">$</span> <span class="t-cmd">ls</span> <span class="t-str">./posts/</span></div>
+      <div style="padding-left:16px;">
+        <span class="t-out">thm-volatility-case002-wannacry.html</span><br>
+        <span class="t-comment">... more coming</span>
+      </div>
+      <br>
+      <div><span class="t-prompt">$</span> <span class="t-cursor"></span></div>
+    </div>
+  </div>
+</div>
+
+<!-- POSTS -->
+<section class="posts-section" id="posts">
+  <div class="section-header">
+    <div class="section-title">All Posts</div>
+    <div class="filters">
+      <button class="filter-btn active" onclick="filterPosts('all', this)">All</button>
+      <button class="filter-btn" onclick="filterPosts('dfir', this)">DFIR</button>
+      <button class="filter-btn" onclick="filterPosts('osint', this)">OSINT</button>
+      <button class="filter-btn" onclick="filterPosts('ctf', this)">CTF</button>
+    </div>
+  </div>
+
+  <div class="posts-list" id="posts-list">
+
+    <!-- LIVE POST -->
+    <a class="post-card" href="./thm-volatility-case002.html" data-tags="dfir malware thm">
+      <div class="post-date">May 12, 2017<br><span style="font-size:10px; color: var(--accent);">★ Latest</span></div>
+      <div class="post-main">
+        <div class="post-tags">
+          <span class="tag tag-thm">TryHackMe</span>
+          <span class="tag tag-dfir">DFIR</span>
+          <span class="tag tag-malware">Malware</span>
+          <span class="tag tag-writeup">Walkthrough</span>
+        </div>
+        <div class="post-title">WannaCry in RAM — Dissecting a Ransomware Memory Dump</div>
+        <div class="post-excerpt">THM Volatility Case 002. Full memory forensics walkthrough — pslist vs psscan evasion, DLL analysis, mutex IOC extraction, and complete WannaCry attribution from a raw dump.</div>
+      </div>
+      <div class="post-arrow">→</div>
+    </a>
+
+    <!-- PLACEHOLDER POSTS -->
+    <div class="post-card coming-soon" data-tags="osint">
+      <div class="post-date">Coming Soon</div>
+      <div class="post-main">
+        <div class="post-tags">
+          <span class="tag tag-osint">OSINT</span>
+          <span class="coming-badge">Drafting</span>
+        </div>
+        <div class="post-title">Tracing a Threat Actor Across the Open Web</div>
+        <div class="post-excerpt">OSINT investigation — pivoting from a username across social platforms, WHOIS records, and breach databases to build a full profile.</div>
+      </div>
+      <div class="post-arrow">→</div>
+    </div>
+
+    <div class="post-card coming-soon" data-tags="ctf dfir">
+      <div class="post-date">Coming Soon</div>
+      <div class="post-main">
+        <div class="post-tags">
+          <span class="tag tag-ctf">CTF</span>
+          <span class="tag tag-dfir">DFIR</span>
+          <span class="coming-badge">Planned</span>
+        </div>
+        <div class="post-title">Network Forensics — Reconstructing an Intrusion from PCAP</div>
+        <div class="post-excerpt">Pulling C2 comms, lateral movement, and exfiltration artifacts out of a packet capture. Wireshark deep dive.</div>
+      </div>
+      <div class="post-arrow">→</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section class="about-strip" id="about">
+  <div class="about-card">
+    <div>
+      <div class="about-label">// About the Author</div>
+      <div class="about-name">WizB</div>
+      <p class="about-desc">
+        B.Tech ECE student at NIT Silchar, Assam. My interest in cybersecurity started with the psychology behind adversaries — why they do what they do, and how to trace the evidence they leave behind. Focused on DFIR and OSINT, working toward becoming a Threat Intelligence Analyst by end of college.
+      </p>
+    </div>
+    <div class="social-links">
+      <a class="social-link" href="https://linkedin.com/in/yourprofile" target="_blank">LinkedIn</a>
+      <a class="social-link" href="https://github.com/yourusername" target="_blank">GitHub</a>
+      <a class="social-link" href="https://twitter.com/yourhandle" target="_blank">X / Twitter</a>
+      <a class="social-link" href="https://instagram.com/yourhandle" target="_blank">Instagram</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-left">Built by <strong>WizB</strong> — hosted on GitHub Pages</div>
+  <div class="footer-right">No trackers. No noise. Just writeups.</div>
+</footer>
+
+<script>
+  function filterPosts(tag, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    document.querySelectorAll('.post-card').forEach(card => {
+      if (tag === 'all') {
+        card.style.display = 'grid';
+        return;
+      }
+      const tags = card.getAttribute('data-tags') || '';
+      card.style.display = tags.includes(tag) ? 'grid' : 'none';
+    });
+  }
+
+  // Stagger card entrance
+  document.querySelectorAll('.post-card').forEach((card, i) => {
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(16px)';
+    card.style.transition = `opacity 0.4s ${0.1 + i * 0.1}s ease, transform 0.4s ${0.1 + i * 0.1}s ease, border-color 0.2s, background 0.2s`;
+    setTimeout(() => {
+      card.style.opacity = card.classList.contains('coming-soon') ? '0.4' : '1';
+      card.style.transform = 'translateY(0)';
+    }, 100);
+  });
+</script>
+
+</body>
+</html>
