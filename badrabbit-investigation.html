@@ -674,12 +674,12 @@
       </div>
       <div class="terminal-body">
         <div><span class="comment"># Displayed sender (what victim sees):</span></div>
-        <div><span class="out">From: theceojamessmith@<span class="red-txt">Daumbo</span>.com</span></div>
+        <div><span class="out">From: theceojamessmith@<span class="red-txt">Drurnbo</span>.com</span></div>
         <br>
         <div><span class="comment"># Legitimate domain:</span></div>
         <div><span class="out">Expected: theceojamessmith@<span class="hi">Drumbo</span>.com</span></div>
         <br>
-        <div><span class="comment"># Delta: 1-letter typo → "Daumbo" vs "Drumbo"</span></div>
+        <div><span class="comment"># Delta: 1-letter typo → "Drurnbo" vs "Drumbo"</span></div>
         <div><span class="comment"># Classic homoglyph/typosquatting phishing indicator</span></div>
       </div>
     </div>
@@ -722,7 +722,7 @@
       <div class="terminal-body">
         <div><span class="comment"># Extract attachment → compute hash → lookup on VT</span></div>
         <div><span class="out">File: <span class="hi">Urgent Contract Action.pdf.exe</span></span></div>
-        <div><span class="out">SHA256: [hash]</span></div>
+        <div><span class="out">SHA256: 630325cac09ac3fab908f903e3b00d0dadd5fdaa0875ed8496fcbb97a558d0da</span></div>
         <br>
         <div><span class="comment"># VirusTotal result:</span></div>
         <div><span class="out">Malware Family: <span class="red-txt">BadRabbit</span></span></div>
@@ -885,7 +885,7 @@
         </div>
         <div class="chain-content">
           <div class="chain-title">Spear Phishing Email Delivered</div>
-          <div class="chain-desc">Victim receives email appearing to be from CEO (james.smith@Daumbo.com — typosquatted domain). Company logo included. Urgent contract attachment triggers download.</div>
+          <div class="chain-desc">Victim receives email appearing to be from CEO (james.smith@Drurnbo.com — typosquatted domain). Company logo included. Urgent contract attachment triggers download.</div>
           <span class="chain-tag">T1566.001 — Phishing: Spearphishing Attachment</span>
         </div>
       </div>
@@ -1060,7 +1060,7 @@
           </tr>
           <tr>
             <td>Spoofed Sender Domain</td>
-            <td><code>Daumbo.com</code> (vs legitimate Drumbo.com)</td>
+            <td><code>Drurnbo.com</code> (vs legitimate Drumbo.com)</td>
             <td><span class="badge badge-orange">Domain</span></td>
             <td><span class="badge badge-red">HIGH</span></td>
           </tr>
@@ -1124,7 +1124,7 @@
 
     <h3>One Character Can Compromise an Entire Organization</h3>
     <p>
-      The entire attack hinged on a single-letter typo in a domain name. <code>Daumbo.com</code> vs <code>Drumbo.com</code>. Under time pressure, in a busy workday, that's an easy miss. This is why email security controls — DMARC, DKIM, SPF — and employee awareness training are non-negotiable.
+      The entire attack hinged on a single-letter typo in a domain name. <code>Drurnbo.com</code> vs <code>Drumbo.com</code>. Under time pressure, in a busy workday, that's an easy miss. This is why email security controls — DMARC, DKIM, SPF — and employee awareness training are non-negotiable.
     </p>
 
     <h3>Hash Lookup Is Your Fastest Attribution Tool</h3>
