@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BadRabbit — Phishing to MBR Corruption | WizB</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #0f1318;
+    --surface2: #151b22;
+    --border: #1e2730;
+    --accent: #ff6b35;
+    --accent2: #00d4aa;
+    --accent3: #7c5cbf;
+    --text: #c9d1d9;
+    --muted: #586069;
+    --heading: #e6edf3;
+    --red: #ff4757;
+    --yellow: #ffd32a;
+    --orange: #ff6b35;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 15px;
+    line-height: 1.75;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255,107,53,0.012) 2px,
+      rgba(255,107,53,0.012) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* Back bar */
+  .back-bar {
+    background: rgba(10,12,15,0.9);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+
+  .back-bar a {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    text-decoration: none;
+    letter-spacing: 1px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: color 0.2s;
+  }
+
+  .back-bar a:hover { color: var(--accent); }
+
+  /* Hero */
+  .hero {
+    position: relative;
+    padding: 60px 0;
+    text-align: center;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255,107,53,0.1) 0%, transparent 70%);
+  }
+
+  .tag-line {
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    opacity: 0.8;
+  }
+
+  .hero h1 {
+    font-family: var(--sans);
+    font-size: clamp(32px, 5vw, 58px);
+    font-weight: 800;
+    color: var(--heading);
+    line-height: 1.15;
+    margin-bottom: 16px;
+    position: relative;
+  }
+
+  .hero h1 .acc { color: var(--accent); }
+  .hero h1 .grn { color: var(--accent2); }
+
+  .hero-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 32px;
+    letter-spacing: 1px;
+  }
+
+  .meta-strip {
+    display: inline-flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    justify-content: center;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .meta-strip span { display: flex; align-items: center; gap: 6px; }
+  .meta-strip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* Sections */
+  .section {
+    padding: 56px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-num {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+
+  h2 {
+    font-family: var(--sans);
+    font-size: clamp(22px, 3vw, 30px);
+    font-weight: 700;
+    color: var(--heading);
+    margin-bottom: 20px;
+    line-height: 1.3;
+  }
+
+  h3 {
+    font-family: var(--sans);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--heading);
+    margin: 32px 0 14px;
+  }
+
+  p { margin-bottom: 16px; color: var(--text); }
+
+  /* Alerts */
+  .alert {
+    border-left: 3px solid var(--accent2);
+    background: rgba(0,212,170,0.05);
+    padding: 16px 20px;
+    margin: 28px 0;
+    border-radius: 0 6px 6px 0;
+    font-size: 13px;
+  }
+
+  .alert.warn {
+    border-color: var(--accent);
+    background: rgba(255,107,53,0.06);
+  }
+
+  .alert.danger {
+    border-color: var(--red);
+    background: rgba(255,71,87,0.06);
+  }
+
+  .alert.intel {
+    border-color: var(--accent3);
+    background: rgba(124,92,191,0.06);
+  }
+
+  .alert-title {
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    color: var(--accent2);
+  }
+
+  .alert.warn .alert-title { color: var(--accent); }
+  .alert.danger .alert-title { color: var(--red); }
+  .alert.intel .alert-title { color: #a78bfa; }
+
+  /* Terminal */
+  .terminal {
+    background: #060809;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 24px 0;
+    overflow: hidden;
+  }
+
+  .terminal-header {
+    background: var(--surface2);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .terminal-dots { display: flex; gap: 6px; }
+  .terminal-dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .terminal-dots .r { background: #ff5f57; }
+  .terminal-dots .y { background: #febc2e; }
+  .terminal-dots .g { background: #28c840; }
+  .terminal-title { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+
+  .terminal-body {
+    padding: 20px;
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-x: auto;
+  }
+
+  .cmd { color: #79b8ff; }
+  .out { color: #85e89d; }
+  .comment { color: var(--muted); font-style: italic; }
+  .prompt { color: var(--accent); user-select: none; }
+  .hi { color: var(--yellow); }
+  .path { color: #d2a8ff; }
+  .red-txt { color: var(--red); }
+  .orange-txt { color: var(--accent); }
+
+  /* Finding cards */
+  .findings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin: 24px 0;
+  }
+
+  .finding-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .finding-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .finding-card.orange::before { background: var(--accent); }
+  .finding-card.green::before { background: var(--accent2); }
+  .finding-card.purple::before { background: var(--accent3); }
+  .finding-card.red::before { background: var(--red); }
+
+  .finding-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .finding-value {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--heading);
+    word-break: break-all;
+    line-height: 1.4;
+  }
+
+  /* Attack chain */
+  .attack-chain {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 28px 0;
+  }
+
+  .chain-step {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    position: relative;
+  }
+
+  .chain-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    width: 36px;
+  }
+
+  .chain-num {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: var(--accent);
+    color: var(--bg);
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .chain-num.green { background: var(--accent2); }
+  .chain-num.purple { background: var(--accent3); }
+  .chain-num.red { background: var(--red); }
+  .chain-num.yellow { background: var(--yellow); color: #000; }
+
+  .chain-connector {
+    width: 2px;
+    flex: 1;
+    min-height: 24px;
+    background: var(--border);
+    margin: 4px 0;
+  }
+
+  .chain-content {
+    flex: 1;
+    padding-bottom: 28px;
+  }
+
+  .chain-step:last-child .chain-content { padding-bottom: 0; }
+
+  .chain-title {
+    font-family: var(--sans);
+    font-weight: 700;
+    color: var(--heading);
+    font-size: 15px;
+    margin-bottom: 6px;
+    margin-top: 4px;
+  }
+
+  .chain-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .chain-tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 8px;
+    background: rgba(255,107,53,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(255,107,53,0.25);
+  }
+
+  .chain-tag.green {
+    background: rgba(0,212,170,0.1);
+    color: var(--accent2);
+    border-color: rgba(0,212,170,0.25);
+  }
+
+  .chain-tag.purple {
+    background: rgba(124,92,191,0.1);
+    color: #a78bfa;
+    border-color: rgba(124,92,191,0.25);
+  }
+
+  .chain-tag.red {
+    background: rgba(255,71,87,0.1);
+    color: var(--red);
+    border-color: rgba(255,71,87,0.25);
+  }
+
+  /* MITRE table */
+  .mitre-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 24px 0;
+  }
+
+  .mitre-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    border-left: 3px solid var(--accent3);
+  }
+
+  .mitre-id {
+    font-size: 11px;
+    color: #a78bfa;
+    letter-spacing: 1px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .mitre-name {
+    font-size: 13px;
+    color: var(--heading);
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .mitre-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* IOC table */
+  .ioc-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 24px 0; }
+
+  .ioc-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    min-width: 520px;
+  }
+
+  .ioc-table th {
+    background: var(--surface2);
+    color: var(--accent);
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .ioc-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(30,39,48,0.5);
+    vertical-align: top;
+  }
+
+  .ioc-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .badge-red { background: rgba(255,71,87,0.15); color: var(--red); border: 1px solid rgba(255,71,87,0.3); }
+  .badge-yellow { background: rgba(255,211,42,0.1); color: var(--yellow); border: 1px solid rgba(255,211,42,0.25); }
+  .badge-green { background: rgba(0,212,170,0.1); color: var(--accent2); border: 1px solid rgba(0,212,170,0.25); }
+  .badge-orange { background: rgba(255,107,53,0.1); color: var(--accent); border: 1px solid rgba(255,107,53,0.3); }
+  .badge-purple { background: rgba(124,92,191,0.15); color: #a78bfa; border: 1px solid rgba(124,92,191,0.3); }
+
+  code {
+    background: var(--surface2);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: #d2a8ff;
+    border: 1px solid var(--border);
+  }
+
+  .highlight-box {
+    background: linear-gradient(135deg, rgba(255,107,53,0.05), rgba(124,92,191,0.05));
+    border: 1px solid rgba(255,107,53,0.2);
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin: 28px 0;
+  }
+
+  /* Threat actor card */
+  .actor-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 28px;
+    margin: 24px 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .actor-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+  }
+
+  .actor-label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  .actor-name {
+    font-family: var(--sans);
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--heading);
+    margin-bottom: 12px;
+  }
+
+  .actor-also {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .actor-desc {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.8;
+  }
+
+  /* Footer */
+  .footer {
+    padding: 48px 0;
+    text-align: center;
+  }
+
+  .footer-sig { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+
+  .footer-name {
+    font-family: var(--sans);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  .cursor {
+    display: inline-block;
+    width: 8px;
+    height: 15px;
+    background: var(--accent);
+    vertical-align: middle;
+    animation: blink 1.2s infinite;
+    margin-left: 2px;
+  }
+
+  @media (max-width: 600px) {
+    .findings-grid { grid-template-columns: 1fr; }
+    .mitre-grid { grid-template-columns: 1fr; }
+    .container { padding: 0 16px; }
+    .section { padding: 40px 0; }
+    .hero { padding: 40px 0; }
+    .terminal-body { font-size: 11px; }
+    .highlight-box { padding: 16px; }
+    h2 { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="back-bar">
+  <a href="./index.html">← Back to Writeups</a>
+</div>
+
+<div class="hero">
+  <div class="container">
+    <div class="tag-line">CyberDefenders · BRabbit Lab · Malware Analysis & Threat Intelligence</div>
+    <h1>
+      <span class="acc">BadRabbit</span> —<br>
+      From Phishing Email<br>
+      to <span class="acc">MBR Corruption</span>
+    </h1>
+    <div class="hero-sub">Full Investigation Walkthrough · Sandworm Threat Actor Attribution</div>
+    <div class="meta-strip">
+      <span><span class="dot"></span> BadRabbit Ransomware</span>
+      <span><span class="dot"></span> ANY.RUN · VirusTotal</span>
+      <span><span class="dot"></span> MITRE ATT&CK Mapping</span>
+      <span><span class="dot"></span> Sandworm / EternalPetya</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- 00 BACKGROUND -->
+  <div class="section">
+    <div class="section-num">00 — Background</div>
+    <h2>The Case: A Phishing Email at DRUMBO Corp</h2>
+    <p>
+      An employee at <strong>DRUMBO Corporation</strong> received a phishing email masquerading as a message from their boss. The email featured the company logo, a familiar sender address, and an attachment that — once opened — deployed ransomware across the system, encrypting sensitive files.
+    </p>
+    <p>
+      Our job: trace the full attack chain from the initial phishing lure all the way through to the malware's behavior, persistence mechanisms, C2 communication, and threat actor attribution.
+    </p>
+
+    <div class="alert">
+      <div class="alert-title">🔬 Investigation Scope</div>
+      This is a <strong>threat intelligence investigation</strong> — we're not just identifying that something bad happened, we're reconstructing <em>how</em> it happened, <em>who</em> is behind it, and <em>what</em> their full capability set looks like. Every artifact is a data point in a larger adversary profile.
+    </div>
+
+    <h3>Key Facts</h3>
+    <div class="findings-grid">
+      <div class="finding-card orange">
+        <div class="finding-label">Target Organization</div>
+        <div class="finding-value">DRUMBO Corporation</div>
+      </div>
+      <div class="finding-card red">
+        <div class="finding-label">Attack Type</div>
+        <div class="finding-value">Ransomware via Spear Phishing</div>
+      </div>
+      <div class="finding-card purple">
+        <div class="finding-label">Malware Family</div>
+        <div class="finding-value">BadRabbit (EternalPetya lineage)</div>
+      </div>
+      <div class="finding-card green">
+        <div class="finding-label">Threat Actor</div>
+        <div class="finding-value">Sandworm (GRU Unit 74455)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 01 PHISHING -->
+  <div class="section">
+    <div class="section-num">01 — Phishing Analysis</div>
+    <h2>Dissecting the Lure</h2>
+
+    <p>
+      The attack began with a carefully crafted spear phishing email. On the surface it looked legitimate — it used the company logo, appeared to come from a trusted sender, and created urgency around a contract document. Three classic social engineering ingredients.
+    </p>
+
+    <h3>The Spoofed Sender</h3>
+    <p>
+      The sender address was <code>theceojamessmith@Drumbo.com</code> — at first glance identical to a legitimate internal address. Closer inspection revealed a one-letter typo: the actual company domain is <strong>Drumbo</strong> but the email came from <strong>Daumbo</strong> (or a variant). A single character substitution — the kind of thing that gets missed in a busy inbox.
+    </p>
+
+    <div class="terminal">
+      <div class="terminal-header">
+        <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+        <div class="terminal-title">email header analysis — sender spoofing</div>
+      </div>
+      <div class="terminal-body">
+        <div><span class="comment"># Displayed sender (what victim sees):</span></div>
+        <div><span class="out">From: theceojamessmith@<span class="red-txt">Daumbo</span>.com</span></div>
+        <br>
+        <div><span class="comment"># Legitimate domain:</span></div>
+        <div><span class="out">Expected: theceojamessmith@<span class="hi">Drumbo</span>.com</span></div>
+        <br>
+        <div><span class="comment"># Delta: 1-letter typo → "Daumbo" vs "Drumbo"</span></div>
+        <div><span class="comment"># Classic homoglyph/typosquatting phishing indicator</span></div>
+      </div>
+    </div>
+
+    <div class="alert warn">
+      <div class="alert-title">🎣 Phishing Indicators — Email</div>
+      Two clear indicators present: (1) <strong>typosquatted sender domain</strong> — one character off from the legitimate address. (2) <strong>Forced urgency</strong> — the email pressured the victim to download and open the attachment immediately, bypassing normal scrutiny. Both are documented social engineering TTPs.
+    </div>
+
+    <h3>The Attachment</h3>
+    <p>
+      The attachment was named <code>Urgent Contract Action.pdf.exe</code> — a double extension trick designed to appear as a PDF while actually being an executable. On default Windows configurations where file extensions are hidden, the victim would only see <em>"Urgent Contract Action.pdf"</em>.
+    </p>
+
+    <div class="alert danger">
+      <div class="alert-title">🚨 Masquerading Detected</div>
+      <code>Urgent Contract Action.pdf.exe</code> — a <code>.exe</code> binary masquerading as a PDF document. This is MITRE ATT&CK <strong>T1036.007 — Masquerading: Double File Extension</strong>. Opening this file did not show a contract. It executed the ransomware payload.
+    </div>
+  </div>
+
+  <!-- 02 STATIC ANALYSIS -->
+  <div class="section">
+    <div class="section-num">02 — Static Analysis</div>
+    <h2>ANY.RUN + VirusTotal — What Is This File?</h2>
+
+    <p>
+      Rather than executing the file directly, we opened it in <strong>ANY.RUN</strong> — a cloud-based interactive sandbox that runs the file in a controlled environment and captures every system call, network connection, and file operation in real time.
+    </p>
+
+    <h3>Initial Finding — Controlled Environment Analysis</h3>
+    <p>
+      ANY.RUN confirmed immediately that <code>Urgent Contract Action.pdf.exe</code> was not a PDF. It identified it as a malicious executable. We extracted the file and ran its SHA256 hash through VirusTotal.
+    </p>
+
+    <div class="terminal">
+      <div class="terminal-header">
+        <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+        <div class="terminal-title">virustotal — SHA256 lookup</div>
+      </div>
+      <div class="terminal-body">
+        <div><span class="comment"># Extract attachment → compute hash → lookup on VT</span></div>
+        <div><span class="out">File: <span class="hi">Urgent Contract Action.pdf.exe</span></span></div>
+        <div><span class="out">SHA256: [hash]</span></div>
+        <br>
+        <div><span class="comment"># VirusTotal result:</span></div>
+        <div><span class="out">Malware Family: <span class="red-txt">BadRabbit</span></span></div>
+        <div><span class="out">Classification: Ransomware</span></div>
+        <div><span class="out">Detection Rate: High — flagged by majority of AV engines</span></div>
+        <br>
+        <div><span class="comment"># Family confirmed: BadRabbit ransomware strain</span></div>
+      </div>
+    </div>
+
+    <div class="highlight-box">
+      <strong style="color: var(--heading);">Attribution via Hash:</strong> The SHA256 lookup on VirusTotal confirmed this sample belongs to the <strong style="color: var(--accent);">BadRabbit</strong> ransomware family — a destructive strain first observed in October 2017, primarily targeting organizations in Russia and Ukraine, with secondary victims across Eastern Europe and Germany.
+    </div>
+  </div>
+
+  <!-- 03 DYNAMIC ANALYSIS -->
+  <div class="section">
+    <div class="section-num">03 — Dynamic Analysis</div>
+    <h2>What Happens When You Run It</h2>
+
+    <p>
+      Dynamic analysis in ANY.RUN revealed the full execution chain. The ransomware doesn't just encrypt files — it follows a multi-stage deployment process designed for maximum damage and lateral movement capability.
+    </p>
+
+    <h3>Stage 1 — The Dropper</h3>
+    <p>
+      Upon execution, the ransomware dropped a file called <code>infpub.dat</code> into the system. This is a malicious DLL — not a legitimate data file despite the <code>.dat</code> extension — which was then loaded and executed by <code>rundll32.exe</code>, Windows' own legitimate process for running DLL files.
+    </p>
+
+    <div class="alert warn">
+      <div class="alert-title">⚠️ Living off the Land</div>
+      Using <code>rundll32.exe</code> to execute a malicious DLL is a classic <strong>LOLBin (Living off the Land Binary)</strong> technique. The malware hijacks a legitimate Windows binary so its execution blends in with normal system activity, evading basic process monitoring.
+    </div>
+
+    <h3>Stage 2 — Lateral Movement via Mimikatz</h3>
+    <p>
+      Digging into <code>infpub.dat</code> revealed something significant: it uses <strong>Mimikatz</strong> — the well-known credential extraction tool — to brute-force NTLM login credentials against Windows machines with pseudo-random IP addresses across the network.
+    </p>
+    <p>
+      The DLL contained a hardcoded list of username/password combinations to try. Reviewing this list, one username stood out as suspiciously specific: <strong>"alex"</strong> — not a generic term like "admin" or "user", suggesting targeted intelligence about the victim environment.
+    </p>
+
+    <div class="terminal">
+      <div class="terminal-header">
+        <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+        <div class="terminal-title">infpub.dat — hardcoded credential list (partial)</div>
+      </div>
+      <div class="terminal-body">
+        <div><span class="comment"># Usernames hardcoded into infpub.dat for NTLM brute force:</span></div>
+        <div><span class="out">Administrator, Admin, Guest, User, User1, user-1</span></div>
+        <div><span class="out">Test, root, buh, boss, ftp, rdp, rdpuser, rdpadmin</span></div>
+        <div><span class="out">manager, support, work, other user, operator, backup</span></div>
+        <div><span class="out">asus, ftpuser, ftpadmin, nas, nasuser, nasadmin</span></div>
+        <div><span class="out">superuser, netguest, <span class="red-txt">alex</span></span></div>
+        <br>
+        <div><span class="comment"># "alex" is anomalously specific — suggests prior recon</span></div>
+        <div><span class="comment"># or reuse from a previous targeted operation</span></div>
+      </div>
+    </div>
+
+    <h3>Stage 3 — C2 Communication</h3>
+    <p>
+      The ransomware communicated with a command and control server using web protocols over standard HTTP/S — specifically sub-technique <strong>T1071.001</strong> in the MITRE ATT&CK framework. Using common web protocols makes C2 traffic blend in with normal browsing activity, making detection harder at the network layer.
+    </p>
+
+    <h3>Stage 4 — Persistence via Scheduled Tasks</h3>
+    <p>
+      Two scheduled tasks were created on the infected system to maintain persistence and orchestrate the final payload execution:
+    </p>
+
+    <div class="findings-grid">
+      <div class="finding-card orange">
+        <div class="finding-label">Scheduled Task 1</div>
+        <div class="finding-value">"rhaegal" — executes dispci.exe on system startup</div>
+      </div>
+      <div class="finding-card red">
+        <div class="finding-label">Scheduled Task 2</div>
+        <div class="finding-value">"drogon" — initiates a forced system shutdown</div>
+      </div>
+    </div>
+
+    <div class="alert intel">
+      <div class="alert-title">🐉 Game of Thrones Naming Convention</div>
+      Both task names — <strong>rhaegal</strong> and <strong>drogon</strong> — are dragons from Game of Thrones. This is consistent with documented BadRabbit behavior; the malware's authors used GoT references throughout. The WannaCry authors used similar pop culture references. Naming conventions in malware are sometimes used as attribution fingerprints across campaigns.
+    </div>
+
+    <p>
+      The <code>drogon</code> task's forced shutdown behavior serves a dual purpose: disrupting normal operations to mask malware activity, and forcing a reboot that triggers the MBR-level encryption on next startup.
+    </p>
+  </div>
+
+  <!-- 04 MBR -->
+  <div class="section">
+    <div class="section-num">04 — The Kill Stage</div>
+    <h2>dispci.exe — MBR Corruption</h2>
+
+    <p>
+      The Cisco Talos malware analysis report on BadRabbit revealed the full picture of <code>dispci.exe</code> — the most destructive component of the attack chain.
+    </p>
+
+    <p>
+      Upon execution, <code>dispci.exe</code> displays the following message to the victim:
+    </p>
+
+    <div class="terminal">
+      <div class="terminal-header">
+        <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+        <div class="terminal-title">dispci.exe — ransom message on execution</div>
+      </div>
+      <div class="terminal-body">
+        <div style="color: var(--red); font-weight: 500;">"Disable your anti-virus and anti-malware programs"</div>
+        <br>
+        <div style="color: var(--text);">Oops! Your files have been encrypted.</div>
+        <div style="color: var(--text);">If you see this text, your files are no longer accessible.</div>
+        <div style="color: var(--text);">Visit our web service at <span class="hi">caforsssztxqzf2nm.onion</span></div>
+        <div style="color: var(--muted); font-style: italic;">Your personal installation key#2: [key]</div>
+      </div>
+    </div>
+
+    <h3>What dispci.exe Actually Does</h3>
+    <p>
+      SHA256 analysis of the <code>dispci.exe</code> executable on VirusTotal revealed its copyright is owned by <code>http://diskcryptor.net</code> — a legitimate disk encryption tool. BadRabbit's authors modified DiskCryptor to serve as their encryption engine.
+    </p>
+
+    <p>
+      The modified binary is specifically designed to:
+    </p>
+
+    <div class="findings-grid">
+      <div class="finding-card red">
+        <div class="finding-label">Primary Action</div>
+        <div class="finding-value">Modify the Master Boot Record (MBR)</div>
+      </div>
+      <div class="finding-card orange">
+        <div class="finding-label">Secondary Action</div>
+        <div class="finding-value">Encrypt the victim's entire hard drive</div>
+      </div>
+      <div class="finding-card purple">
+        <div class="finding-label">Exploit Used</div>
+        <div class="finding-value">EternalRomance (SMB exploit)</div>
+      </div>
+    </div>
+
+    <div class="alert danger">
+      <div class="alert-title">💀 MBR-Level Destruction</div>
+      Corrupting the MBR means the system <strong>cannot boot at all</strong> after reboot — the victim sees only the ransom note instead of Windows. This is not just file-level encryption like typical ransomware. It's full system destruction unless the ransom is paid. MITRE ATT&CK classifies this as <strong>T1495 — Firmware Corruption</strong>.
+    </div>
+  </div>
+
+  <!-- 05 ATTACK CHAIN -->
+  <div class="section">
+    <div class="section-num">05 — Full Attack Chain</div>
+    <h2>Reconstructing the Kill Chain</h2>
+
+    <div class="attack-chain">
+      <div class="chain-step">
+        <div class="chain-left">
+          <div class="chain-num">01</div>
+          <div class="chain-connector"></div>
+        </div>
+        <div class="chain-content">
+          <div class="chain-title">Spear Phishing Email Delivered</div>
+          <div class="chain-desc">Victim receives email appearing to be from CEO (james.smith@Daumbo.com — typosquatted domain). Company logo included. Urgent contract attachment triggers download.</div>
+          <span class="chain-tag">T1566.001 — Phishing: Spearphishing Attachment</span>
+        </div>
+      </div>
+
+      <div class="chain-step">
+        <div class="chain-left">
+          <div class="chain-num">02</div>
+          <div class="chain-connector"></div>
+        </div>
+        <div class="chain-content">
+          <div class="chain-title">Masqueraded Executable Opened</div>
+          <div class="chain-desc">Victim opens "Urgent Contract Action.pdf.exe" believing it to be a PDF. Double extension trick bypasses visual inspection. Ransomware payload executes.</div>
+          <span class="chain-tag">T1036.007 — Masquerading: Double File Extension</span>
+        </div>
+      </div>
+
+      <div class="chain-step">
+        <div class="chain-left">
+          <div class="chain-num green">03</div>
+          <div class="chain-connector"></div>
+        </div>
+        <div class="chain-content">
+          <div class="chain-title">infpub.dat Dropped & Executed</div>
+          <div class="chain-desc">Malicious DLL dropped to disk. Loaded via rundll32.exe — legitimate Windows binary — to blend execution with normal system activity.</div>
+          <span class="chain-tag green">T1218.011 — Signed Binary Proxy: Rundll32</span>
+        </div>
+      </div>
+
+      <div class="chain-step">
+        <div class="chain-left">
+          <div class="chain-num green">04</div>
+          <div class="chain-connector"></div>
+        </div>
+        <div class="chain-content">
+          <div class="chain-title">NTLM Credential Brute Force</div>
+          <div class="chain-desc">infpub.dat uses Mimikatz to brute-force NTLM credentials against machines on pseudo-random IPs. Hardcoded credential list includes generic and targeted usernames including "alex".</div>
+          <span class="chain-tag green">T1110.001 — Brute Force: Password Guessing</span>
+        </div>
+      </div>
+
+      <div class="chain-step">
+        <div class="chain-left">
+          <div class="chain-num yellow">05</div>
+          <div class="chain-connector"></div>
+        </div>
+        <div class="chain-content">
+          <div class="chain-title">C2 Communication Established</div>
+          <div class="chain-desc">Ransomware phones home to C2 server using standard web protocols over HTTP/S — traffic blends in with legitimate browsing, evading network-level detection.</div>
+          <span class="chain-tag">T1071.001 — Application Layer Protocol: Web Protocols</span>
+        </div>
+      </div>
+
+      <div class="chain-step">
+        <div class="chain-left">
+          <div class="chain-num yellow">06</div>
+          <div class="chain-connector"></div>
+        </div>
+        <div class="chain-content">
+          <div class="chain-title">Persistence — Scheduled Tasks Created</div>
+          <div class="chain-desc">Two scheduled tasks installed: "rhaegal" (executes dispci.exe on boot) and "drogon" (forces system shutdown). Persistence survives reboot; shutdown forces MBR encryption to trigger.</div>
+          <span class="chain-tag">T1053.005 — Scheduled Task/Job</span>
+        </div>
+      </div>
+
+      <div class="chain-step">
+        <div class="chain-left">
+          <div class="chain-num red">07</div>
+        </div>
+        <div class="chain-content">
+          <div class="chain-title">MBR Corruption & Full Disk Encryption</div>
+          <div class="chain-desc">dispci.exe (modified DiskCryptor) overwrites the Master Boot Record and encrypts the victim's hard drive. On reboot, system is non-functional — only the ransom note is displayed via the .onion payment portal.</div>
+          <span class="chain-tag red">T1495 — Firmware Corruption</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 06 THREAT ACTOR -->
+  <div class="section">
+    <div class="section-num">06 — Threat Actor Attribution</div>
+    <h2>Who Is Behind BadRabbit?</h2>
+
+    <p>
+      The malware analysis trail — combined with research via Malpedia — points to a well-documented and dangerous threat actor.
+    </p>
+
+    <div class="actor-card">
+      <div class="actor-label">// Attributed Threat Actor</div>
+      <div class="actor-name">Sandworm</div>
+      <div class="actor-also">Also known as: GRU Unit 74455 · Voodoo Bear · TeleBots · Iron Viking</div>
+      <div class="actor-desc">
+        Sandworm is a Russian nation-state threat actor widely attributed to the GRU (Russian military intelligence). They are responsible for some of the most destructive cyberattacks in history — including the 2015 and 2016 Ukrainian power grid attacks, NotPetya, and Olympic Destroyer. BadRabbit is part of the <strong>EternalPetya threat actor group</strong>, which Malpedia links directly to Sandworm's operational infrastructure and tooling patterns.
+      </div>
+    </div>
+
+    <div class="alert intel">
+      <div class="alert-title">🔗 Attribution Chain</div>
+      BadRabbit → EternalPetya family → Sandworm (GRU Unit 74455). The connection is established through shared code similarities with NotPetya, overlapping C2 infrastructure, identical MBR corruption techniques, and the use of EternalRomance — the same NSA-leaked SMB exploit used in previous Sandworm operations.
+    </div>
+  </div>
+
+  <!-- 07 MITRE -->
+  <div class="section">
+    <div class="section-num">07 — MITRE ATT&CK Mapping</div>
+    <h2>Techniques Observed</h2>
+
+    <div class="mitre-grid">
+      <div class="mitre-card">
+        <div class="mitre-id">T1566.001</div>
+        <div class="mitre-name">Spearphishing Attachment</div>
+        <div class="mitre-desc">Initial access via targeted phishing email with malicious attachment</div>
+      </div>
+      <div class="mitre-card">
+        <div class="mitre-id">T1036.007</div>
+        <div class="mitre-name">Double File Extension</div>
+        <div class="mitre-desc">.pdf.exe masquerading to trick victim into executing binary</div>
+      </div>
+      <div class="mitre-card">
+        <div class="mitre-id">T1218.011</div>
+        <div class="mitre-name">Signed Binary Proxy: Rundll32</div>
+        <div class="mitre-desc">infpub.dat loaded via legitimate rundll32.exe to evade detection</div>
+      </div>
+      <div class="mitre-card">
+        <div class="mitre-id">T1110.001</div>
+        <div class="mitre-name">Password Guessing</div>
+        <div class="mitre-desc">Mimikatz-based NTLM brute force with hardcoded credential list</div>
+      </div>
+      <div class="mitre-card">
+        <div class="mitre-id">T1071.001</div>
+        <div class="mitre-name">Web Protocols C2</div>
+        <div class="mitre-desc">C2 communication over HTTP/S to blend with legitimate traffic</div>
+      </div>
+      <div class="mitre-card">
+        <div class="mitre-id">T1053.005</div>
+        <div class="mitre-name">Scheduled Task</div>
+        <div class="mitre-desc">rhaegal + drogon tasks for persistence and shutdown trigger</div>
+      </div>
+      <div class="mitre-card">
+        <div class="mitre-id">T1495</div>
+        <div class="mitre-name">Firmware Corruption</div>
+        <div class="mitre-desc">MBR overwrite via modified DiskCryptor to prevent booting</div>
+      </div>
+      <div class="mitre-card">
+        <div class="mitre-id">T1486</div>
+        <div class="mitre-name">Data Encrypted for Impact</div>
+        <div class="mitre-desc">Full disk encryption rendering data inaccessible without decryption key</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 08 IOC -->
+  <div class="section">
+    <div class="section-num">08 — IOC Summary</div>
+    <h2>Indicators of Compromise</h2>
+
+    <div class="ioc-wrap">
+      <table class="ioc-table">
+        <thead>
+          <tr>
+            <th>Indicator</th>
+            <th>Value</th>
+            <th>Type</th>
+            <th>Confidence</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Malicious Attachment</td>
+            <td><code>Urgent Contract Action.pdf.exe</code></td>
+            <td><span class="badge badge-red">File</span></td>
+            <td><span class="badge badge-red">HIGH</span></td>
+          </tr>
+          <tr>
+            <td>Spoofed Sender Domain</td>
+            <td><code>Daumbo.com</code> (vs legitimate Drumbo.com)</td>
+            <td><span class="badge badge-orange">Domain</span></td>
+            <td><span class="badge badge-red">HIGH</span></td>
+          </tr>
+          <tr>
+            <td>Dropped DLL</td>
+            <td><code>infpub.dat</code></td>
+            <td><span class="badge badge-red">File</span></td>
+            <td><span class="badge badge-red">HIGH</span></td>
+          </tr>
+          <tr>
+            <td>Encryption Binary</td>
+            <td><code>dispci.exe</code> (modified DiskCryptor)</td>
+            <td><span class="badge badge-red">File</span></td>
+            <td><span class="badge badge-red">HIGH</span></td>
+          </tr>
+          <tr>
+            <td>Scheduled Task</td>
+            <td><code>rhaegal</code> — startup persistence</td>
+            <td><span class="badge badge-orange">Persistence</span></td>
+            <td><span class="badge badge-red">HIGH</span></td>
+          </tr>
+          <tr>
+            <td>Scheduled Task</td>
+            <td><code>drogon</code> — forced shutdown</td>
+            <td><span class="badge badge-orange">Persistence</span></td>
+            <td><span class="badge badge-red">HIGH</span></td>
+          </tr>
+          <tr>
+            <td>C2 Payment Portal</td>
+            <td><code>caforsssztxqzf2nm.onion</code></td>
+            <td><span class="badge badge-purple">Network</span></td>
+            <td><span class="badge badge-red">HIGH</span></td>
+          </tr>
+          <tr>
+            <td>Malware Family</td>
+            <td>BadRabbit / EternalPetya lineage</td>
+            <td><span class="badge badge-orange">Attribution</span></td>
+            <td><span class="badge badge-red">HIGH</span></td>
+          </tr>
+          <tr>
+            <td>Threat Actor</td>
+            <td>Sandworm (GRU Unit 74455)</td>
+            <td><span class="badge badge-purple">Actor</span></td>
+            <td><span class="badge badge-yellow">MEDIUM-HIGH</span></td>
+          </tr>
+          <tr>
+            <td>Suspicious Username</td>
+            <td><code>alex</code> — in hardcoded brute force list</td>
+            <td><span class="badge badge-green">Credential</span></td>
+            <td><span class="badge badge-yellow">MEDIUM</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 09 TAKEAWAYS -->
+  <div class="section">
+    <div class="section-num">09 — Takeaways</div>
+    <h2>What This Investigation Teaches Us</h2>
+
+    <h3>One Character Can Compromise an Entire Organization</h3>
+    <p>
+      The entire attack hinged on a single-letter typo in a domain name. <code>Daumbo.com</code> vs <code>Drumbo.com</code>. Under time pressure, in a busy workday, that's an easy miss. This is why email security controls — DMARC, DKIM, SPF — and employee awareness training are non-negotiable.
+    </p>
+
+    <h3>Hash Lookup Is Your Fastest Attribution Tool</h3>
+    <p>
+      Extracting the attachment and running its SHA256 on VirusTotal took minutes and immediately connected us to the BadRabbit family. For any unknown file in an investigation, hash lookup should be the first step — it either closes the case fast or tells you what rabbit hole you're going down.
+    </p>
+
+    <h3>Dynamic Analysis Reveals What Static Analysis Misses</h3>
+    <p>
+      The infpub.dat drop, the Mimikatz credential brute force, the scheduled tasks — none of these would have been visible from static analysis of the original attachment. ANY.RUN's sandbox showed us the full behavior chain that only manifests at runtime. Static + dynamic together is the complete picture.
+    </p>
+
+    <h3>Nation-State TTPs Leave Fingerprints</h3>
+    <p>
+      The GoT naming convention, the EternalRomance exploit, the MBR corruption technique — individually these are just data points. Together they form a behavioral signature that connects BadRabbit to Sandworm's broader operational pattern. Threat intel is about recognizing those patterns across campaigns, not just analyzing isolated samples.
+    </p>
+
+    <div class="highlight-box" style="margin-top: 32px;">
+      <div style="font-family: var(--sans); font-size: 15px; font-weight: 700; color: var(--heading); margin-bottom: 10px;">Tools Used — This Investigation</div>
+      <div style="font-size: 13px; line-height: 2.2; color: var(--text);">
+        <code>ANY.RUN</code> — Interactive sandbox for safe execution &amp; behavior analysis<br>
+        <code>VirusTotal</code> — SHA256 hash lookup &amp; malware family attribution<br>
+        <code>Malpedia</code> — Threat actor research &amp; malware family mapping<br>
+        <code>Cisco Talos / Securelist</code> — Third-party malware analysis reports<br>
+        <code>MITRE ATT&CK</code> — TTP mapping &amp; technique identification<br>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-sig">Written as a walkthrough for CyberDefenders BRabbit Lab by</div>
+    <div class="footer-name">WizB</div>
+    <div style="font-size:11px; color: var(--muted); margin-top: 8px; letter-spacing: 1px;">
+      DFIR · OSINT · NIT Silchar ECE<span class="cursor"></span>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
