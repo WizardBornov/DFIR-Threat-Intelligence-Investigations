@@ -554,7 +554,7 @@
     </div>
     <div class="terminal-body">
       <div><span class="comment"># Additional URL contacted by CoinMiner post-execution:</span></div>
-      <div><span class="out">GET <span class="hi">http://ripley.studio/loader/uploads/QamjttrbvJpeg</span></span></div>
+      <div><span class="out">GET <span class="hi">http://ripley.studio/loader/uploads/Qanjttrbv.jpeg</span></span></div>
       <br>
       <div><span class="comment"># Note: .jpeg extension masking a non-image payload</span></div>
       <div><span class="comment"># Used to download supplementary attack components</span></div>
@@ -580,7 +580,7 @@
     <div class="terminal-body">
       <div><span class="comment"># Suspicious AutoRun entry created by BitRat:</span></div>
       <div><span class="path">HKEY_CURRENT_USER\Software\Microsoft\Windows\</span></div>
-      <div><span class="path">CurrentVersion\Run\<span class="red-txt">Jzwnix</span></span></div>
+      <div><span class="path">CurrentVersion\Run\<span class="red-txt">Jzwvix</span></span></div>
       <br>
       <div><span class="comment"># "Jzwnix" — random-looking key name, classic obfuscation</span></div>
       <div><span class="comment"># This key executes BitRat automatically on every user login</span></div>
@@ -662,7 +662,7 @@
     </div>
     <div class="terminal-body">
       <div><span class="comment"># C2 server identified via VirusTotal community analysis:</span></div>
-      <div><span class="out">C2 Domain: <span class="red-txt">ghost.myaiv.org</span></span></div>
+      <div><span class="out">C2 Domain: <span class="red-txt">gh9st.mywire.org</span></span></div>
       <div><span class="out">C2 Port:   <span class="hi">5005</span></span></div>
       <br>
       <div><span class="comment"># AsyncRAT communicates back to this domain</span></div>
@@ -704,7 +704,7 @@
     </div>
     <div class="finding-card red">
       <div class="finding-label">AsyncRAT C2</div>
-      <div class="finding-value">ghost.myaiv.org:5005</div>
+      <div class="finding-value">gh9st.mywire.org:5005</div>
     </div>
     <div class="finding-card orange">
       <div class="finding-label">Secondary Payload Host</div>
@@ -804,7 +804,7 @@
     <div class="mitre-card">
       <div class="mitre-id">T1547.001</div>
       <div class="mitre-name">Registry Run Keys</div>
-      <div class="mitre-desc">HKCU\...\Run\Jzwnix for BitRat persistence across reboots</div>
+      <div class="mitre-desc">HKCU\...\Run\Jzwvix for BitRat persistence across reboots</div>
     </div>
     <div class="mitre-card">
       <div class="mitre-id">T1059.001</div>
@@ -814,7 +814,7 @@
     <div class="mitre-card">
       <div class="mitre-id">T1071.001</div>
       <div class="mitre-name">Web Protocols C2</div>
-      <div class="mitre-desc">AsyncRAT C2 over standard web protocols to ghost.myaiv.org:5005</div>
+      <div class="mitre-desc">AsyncRAT C2 over standard web protocols to gh9st.mywire.org:5005</div>
     </div>
     <div class="mitre-card">
       <div class="mitre-id">T1567</div>
@@ -839,10 +839,10 @@
         <tr><td>Staging Server</td><td><code>107.175.247.199</code></td><td><span class="badge badge-orange">IP</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
         <tr><td>Initial Dropper</td><td><code>http://107.175.247.199/loader/install.exe</code></td><td><span class="badge badge-red">URL</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
         <tr><td>BitRat Payload</td><td><code>http://107.175.247.199/loader/server.exe</code></td><td><span class="badge badge-red">URL</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
-        <tr><td>Secondary Payload</td><td><code>http://ripley.studio/loader/uploads/QamjttrbvJpeg</code></td><td><span class="badge badge-red">URL</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
-        <tr><td>AsyncRAT C2</td><td><code>ghost.myaiv.org:5005</code></td><td><span class="badge badge-purple">Domain</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Secondary Payload</td><td><code>http://ripley.studio/loader/uploads/Qanjttrbv.jpeg</code></td><td><span class="badge badge-red">URL</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>AsyncRAT C2</td><td><code>gh9st.mywire.org:5005</code></td><td><span class="badge badge-purple">Domain</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
         <tr><td>Telegram Bot</td><td><code>5610920260</code></td><td><span class="badge badge-blue">Bot ID</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
-        <tr><td>Persistence Key</td><td><code>HKCU\...\Run\Jzwnix</code></td><td><span class="badge badge-orange">Registry</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Persistence Key</td><td><code>HKCU\...\Run\Jzwvix</code></td><td><span class="badge badge-orange">Registry</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
         <tr><td>BitRat SHA256</td><td><code>b67628695c2df7a302...63 9539</code></td><td><span class="badge badge-green">Hash</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
         <tr><td>Return-Path</td><td><code>erikajohana.lopez@uptc.edu.co</code></td><td><span class="badge badge-yellow">Email</span></td><td><span class="badge badge-yellow">MEDIUM</span></td></tr>
       </tbody>
