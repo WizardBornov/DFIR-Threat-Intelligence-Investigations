@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhishStrike — Faculty Phishing to Multi-Malware Deployment | WizB</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #0f1318;
+    --surface2: #151b22;
+    --border: #1e2730;
+    --accent: #00d4aa;
+    --accent2: #7c5cbf;
+    --accent3: #ff6b35;
+    --text: #c9d1d9;
+    --muted: #586069;
+    --heading: #e6edf3;
+    --red: #ff4757;
+    --yellow: #ffd32a;
+    --blue: #79b8ff;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 15px;
+    line-height: 1.75;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0,212,170,0.01) 2px, rgba(0,212,170,0.01) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  .back-bar {
+    background: rgba(10,12,15,0.9);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+
+  .back-bar a {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    text-decoration: none;
+    letter-spacing: 1px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: color 0.2s;
+  }
+
+  .back-bar a:hover { color: var(--accent); }
+
+  .hero {
+    position: relative;
+    padding: 60px 0;
+    text-align: center;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,212,170,0.08) 0%, transparent 70%);
+  }
+
+  .tag-line {
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    opacity: 0.8;
+  }
+
+  .hero h1 {
+    font-family: var(--sans);
+    font-size: clamp(30px, 5vw, 56px);
+    font-weight: 800;
+    color: var(--heading);
+    line-height: 1.15;
+    margin-bottom: 16px;
+    position: relative;
+  }
+
+  .hero h1 .acc  { color: var(--accent); }
+  .hero h1 .acc2 { color: var(--accent3); }
+
+  .hero-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 32px;
+    letter-spacing: 1px;
+  }
+
+  .meta-strip {
+    display: inline-flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    justify-content: center;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .meta-strip span { display: flex; align-items: center; gap: 6px; }
+  .meta-strip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  .section { padding: 56px 0; border-bottom: 1px solid var(--border); }
+
+  .section-num {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+
+  h2 {
+    font-family: var(--sans);
+    font-size: clamp(20px, 3vw, 28px);
+    font-weight: 700;
+    color: var(--heading);
+    margin-bottom: 20px;
+    line-height: 1.3;
+  }
+
+  h3 {
+    font-family: var(--sans);
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--heading);
+    margin: 32px 0 14px;
+  }
+
+  p { margin-bottom: 16px; color: var(--text); }
+
+  .alert {
+    border-left: 3px solid var(--accent);
+    background: rgba(0,212,170,0.05);
+    padding: 16px 20px;
+    margin: 28px 0;
+    border-radius: 0 6px 6px 0;
+    font-size: 13px;
+  }
+
+  .alert.warn  { border-color: var(--accent3); background: rgba(255,107,53,0.06); }
+  .alert.danger{ border-color: var(--red);    background: rgba(255,71,87,0.06);  }
+  .alert.intel { border-color: var(--accent2); background: rgba(124,92,191,0.06);}
+  .alert.blue  { border-color: var(--blue);   background: rgba(121,184,255,0.06);}
+
+  .alert-title {
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    color: var(--accent);
+  }
+
+  .alert.warn  .alert-title { color: var(--accent3); }
+  .alert.danger .alert-title { color: var(--red); }
+  .alert.intel .alert-title  { color: #a78bfa; }
+  .alert.blue  .alert-title  { color: var(--blue); }
+
+  .terminal {
+    background: #060809;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 24px 0;
+    overflow: hidden;
+  }
+
+  .terminal-header {
+    background: var(--surface2);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .terminal-dots { display: flex; gap: 6px; }
+  .terminal-dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .terminal-dots .r { background: #ff5f57; }
+  .terminal-dots .y { background: #febc2e; }
+  .terminal-dots .g { background: #28c840; }
+  .terminal-title { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+
+  .terminal-body {
+    padding: 20px;
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-x: auto;
+  }
+
+  .cmd     { color: #79b8ff; }
+  .out     { color: #85e89d; }
+  .comment { color: var(--muted); font-style: italic; }
+  .hi      { color: var(--yellow); }
+  .path    { color: #d2a8ff; }
+  .red-txt { color: var(--red); }
+  .grn-txt { color: var(--accent); }
+  .ora-txt { color: var(--accent3); }
+
+  .findings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin: 24px 0;
+  }
+
+  .finding-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .finding-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .finding-card.green::before  { background: var(--accent); }
+  .finding-card.orange::before { background: var(--accent3); }
+  .finding-card.purple::before { background: var(--accent2); }
+  .finding-card.red::before    { background: var(--red); }
+  .finding-card.blue::before   { background: var(--blue); }
+
+  .finding-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .finding-value { font-size: 13px; font-weight: 700; color: var(--heading); word-break: break-all; line-height: 1.4; }
+
+  /* Attack chain */
+  .attack-chain { display: flex; flex-direction: column; margin: 28px 0; }
+
+  .chain-step { display: flex; gap: 16px; align-items: flex-start; }
+
+  .chain-left { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; width: 36px; }
+
+  .chain-num {
+    width: 32px; height: 32px; border-radius: 6px;
+    background: var(--accent); color: var(--bg);
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+
+  .chain-num.orange { background: var(--accent3); }
+  .chain-num.purple { background: var(--accent2); }
+  .chain-num.red    { background: var(--red); }
+  .chain-num.yellow { background: var(--yellow); color: #000; }
+  .chain-num.blue   { background: var(--blue); color: #000; }
+
+  .chain-connector { width: 2px; flex: 1; min-height: 24px; background: var(--border); margin: 4px 0; }
+
+  .chain-content { flex: 1; padding-bottom: 28px; }
+  .chain-step:last-child .chain-content { padding-bottom: 0; }
+
+  .chain-title { font-family: var(--sans); font-weight: 700; color: var(--heading); font-size: 15px; margin-bottom: 6px; margin-top: 4px; }
+  .chain-desc  { font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+  .chain-tag {
+    display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 3px;
+    font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-top: 8px;
+    background: rgba(0,212,170,0.1); color: var(--accent); border: 1px solid rgba(0,212,170,0.25);
+  }
+  .chain-tag.orange { background: rgba(255,107,53,0.1); color: var(--accent3); border-color: rgba(255,107,53,0.25); }
+  .chain-tag.purple { background: rgba(124,92,191,0.1); color: #a78bfa;        border-color: rgba(124,92,191,0.25); }
+  .chain-tag.red    { background: rgba(255,71,87,0.1);  color: var(--red);     border-color: rgba(255,71,87,0.25);  }
+  .chain-tag.blue   { background: rgba(121,184,255,0.1);color: var(--blue);    border-color: rgba(121,184,255,0.25);}
+
+  /* Malware profile cards */
+  .malware-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin: 24px 0; }
+
+  .malware-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .malware-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .malware-card.rat::before   { background: linear-gradient(90deg, var(--red), var(--accent3)); }
+  .malware-card.miner::before { background: linear-gradient(90deg, var(--yellow), var(--accent3)); }
+
+  .malware-type { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .malware-name { font-family: var(--sans); font-size: 20px; font-weight: 800; color: var(--heading); margin-bottom: 10px; }
+  .malware-desc { font-size: 12px; color: var(--muted); line-height: 1.7; }
+
+  /* MITRE grid */
+  .mitre-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 24px 0; }
+
+  .mitre-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px 18px; border-left: 3px solid var(--accent2);
+  }
+
+  .mitre-id   { font-size: 11px; color: #a78bfa; letter-spacing: 1px; font-weight: 700; margin-bottom: 6px; }
+  .mitre-name { font-size: 13px; color: var(--heading); font-weight: 600; margin-bottom: 4px; }
+  .mitre-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+  /* IOC table */
+  .ioc-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 24px 0; }
+
+  .ioc-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 520px; }
+
+  .ioc-table th {
+    background: var(--surface2); color: var(--accent);
+    font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border);
+  }
+
+  .ioc-table td { padding: 12px 16px; border-bottom: 1px solid rgba(30,39,48,0.5); vertical-align: top; }
+  .ioc-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; letter-spacing: 1px; font-weight: 700; text-transform: uppercase; }
+  .badge-red    { background: rgba(255,71,87,0.15);  color: var(--red);     border: 1px solid rgba(255,71,87,0.3);    }
+  .badge-yellow { background: rgba(255,211,42,0.1);  color: var(--yellow);  border: 1px solid rgba(255,211,42,0.25);  }
+  .badge-green  { background: rgba(0,212,170,0.1);   color: var(--accent);  border: 1px solid rgba(0,212,170,0.25);   }
+  .badge-orange { background: rgba(255,107,53,0.1);  color: var(--accent3); border: 1px solid rgba(255,107,53,0.3);   }
+  .badge-purple { background: rgba(124,92,191,0.15); color: #a78bfa;        border: 1px solid rgba(124,92,191,0.3);   }
+  .badge-blue   { background: rgba(121,184,255,0.1); color: var(--blue);    border: 1px solid rgba(121,184,255,0.3);  }
+
+  code {
+    background: var(--surface2); padding: 2px 7px; border-radius: 4px;
+    font-family: var(--mono); font-size: 12px; color: #d2a8ff;
+    border: 1px solid var(--border);
+  }
+
+  .highlight-box {
+    background: linear-gradient(135deg, rgba(0,212,170,0.05), rgba(124,92,191,0.05));
+    border: 1px solid rgba(0,212,170,0.2);
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin: 28px 0;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
+  .cursor { display: inline-block; width: 8px; height: 15px; background: var(--accent); vertical-align: middle; animation: blink 1.2s infinite; margin-left: 2px; }
+
+  .footer { padding: 48px 0; text-align: center; }
+  .footer-sig  { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .footer-name { font-family: var(--sans); font-size: 18px; font-weight: 700; color: var(--accent); }
+
+  @media (max-width: 600px) {
+    .findings-grid { grid-template-columns: 1fr; }
+    .mitre-grid    { grid-template-columns: 1fr; }
+    .malware-grid  { grid-template-columns: 1fr; }
+    .container { padding: 0 16px; }
+    .section   { padding: 40px 0; }
+    .hero      { padding: 40px 0; }
+    .terminal-body { font-size: 11px; }
+    .highlight-box { padding: 16px; }
+    h2 { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="back-bar">
+  <a href="./index.html">← Back to Writeups</a>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="container">
+    <div class="tag-line">CyberDefenders · PhishStrike Lab · Email Forensics & Threat Intelligence</div>
+    <h1>
+      <span class="acc">PhishStrike</span> —<br>
+      From Spoofed Invoice<br>
+      to <span class="acc2">Multi-Malware Deployment</span>
+    </h1>
+    <div class="hero-sub">Full Investigation Walkthrough · AsyncRAT · BitRat · CoinMiner · Telegram C2</div>
+    <div class="meta-strip">
+      <span><span class="dot"></span> Email Header Analysis</span>
+      <span><span class="dot"></span> URLhaus · VirusTotal</span>
+      <span><span class="dot"></span> MITRE ATT&CK Mapping</span>
+      <span><span class="dot"></span> 3 Malware Families</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- 00 BACKGROUND -->
+<div class="section">
+  <div class="section-num">00 — Background</div>
+  <h2>The Case: A $625,000 Invoice Nobody Ordered</h2>
+  <p>
+    Faculty members at an educational institution received an email claiming a <strong>$625,000 purchase</strong> had been made on their account. The email appeared to come from a trusted source and contained a link to download the invoice. Clicking that link didn't open a PDF — it kicked off a multi-stage malware deployment chain ending in a RAT, a cryptominer, and a Telegram-connected C2 server.
+  </p>
+  <p>
+    This investigation traces the full chain: from the spoofed email header all the way through to the malware families deployed, their persistence mechanisms, and their command and control infrastructure.
+  </p>
+
+  <div class="alert">
+    <div class="alert-title">🎯 Investigation Scope</div>
+    This is a <strong>phishing-focused threat intelligence investigation</strong> — email forensics, URL analysis, malware attribution across three families, and C2 infrastructure mapping. No memory dump or disk image involved. Pure OSINT + threat intel tooling.
+  </div>
+
+  <div class="findings-grid">
+    <div class="finding-card green">
+      <div class="finding-label">Target</div>
+      <div class="finding-value">Educational Institution Faculty</div>
+    </div>
+    <div class="finding-card orange">
+      <div class="finding-label">Lure</div>
+      <div class="finding-value">$625,000 Fake Purchase Invoice</div>
+    </div>
+    <div class="finding-card red">
+      <div class="finding-label">Malware Families</div>
+      <div class="finding-value">AsyncRAT · BitRat · CoinMiner</div>
+    </div>
+    <div class="finding-card purple">
+      <div class="finding-label">C2 Channel</div>
+      <div class="finding-value">Telegram Bot + ghost.myaiv.org</div>
+    </div>
+  </div>
+</div>
+
+<!-- 01 EMAIL HEADER -->
+<div class="section">
+  <div class="section-num">01 — Email Header Analysis</div>
+  <h2>Dissecting the Phishing Email</h2>
+
+  <p>
+    The first step was running the email headers through an <strong>Email Header Analyzer</strong>. Two authentication failures surfaced immediately — the kind of failures that should trigger automatic quarantine in any properly configured mail environment.
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">email header analyzer — authentication results</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># SPF check — did email come from authorized server?</span></div>
+      <div><span class="out">SPF: <span class="hi">softfail</span>  <span class="comment">← server not explicitly authorized to send</span></span></div>
+      <br>
+      <div><span class="comment"># DKIM check — was email cryptographically signed?</span></div>
+      <div><span class="out">DKIM: <span class="red-txt">fail</span>  <span class="comment">← signature invalid or missing</span></span></div>
+      <br>
+      <div><span class="comment"># Sender IP extracted from headers</span></div>
+      <div><span class="out">Sender IP: <span class="hi">18.208.22.104</span></span></div>
+      <br>
+      <div><span class="comment"># Return-path — where replies actually go</span></div>
+      <div><span class="out">Return-Path: <span class="red-txt">erikajohana.lopez@uptc.edu.co</span></span></div>
+      <div><span class="comment"># uptc.edu.co is a Colombian university — likely a compromised account</span></div>
+    </div>
+  </div>
+
+  <div class="alert warn">
+    <div class="alert-title">🚨 Authentication Failures</div>
+    <strong>SPF softfail</strong> means the sending server isn't explicitly authorized. <strong>DKIM fail</strong> means the email wasn't cryptographically signed by the claimed domain. Together these are strong indicators of spoofing. A properly configured mail gateway with DMARC enforcement would have rejected this email before it reached any inbox.
+  </div>
+
+  <h3>The Malicious Download Link</h3>
+  <p>
+    The email contained a link to download the fake invoice. Following it led to a plaintext HTTP URL — no TLS, no HTTPS — serving a Windows executable directly:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">malicious download URL</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="out">URL: <span class="red-txt">http://</span>107.175.247.199<span class="hi">/loader/install.exe</span></span></div>
+      <br>
+      <div><span class="comment"># Red flags:</span></div>
+      <div><span class="comment"># 1. HTTP not HTTPS — no encryption, no certificate verification</span></div>
+      <div><span class="comment"># 2. Raw IP address instead of domain name</span></div>
+      <div><span class="comment"># 3. /loader/ path — classic staging server naming</span></div>
+      <div><span class="comment"># 4. .exe served as an "invoice" — extreme mismatch</span></div>
+    </div>
+  </div>
+
+  <div class="alert danger">
+    <div class="alert-title">💀 Four Red Flags in One URL</div>
+    HTTP (not HTTPS), raw IP address, <code>/loader/</code> path, and an <code>.exe</code> disguised as an invoice. Any single one of these warrants immediate suspicion. All four together confirm this is a malware staging server.
+  </div>
+</div>
+
+<!-- 02 URL INTEL -->
+<div class="section">
+  <div class="section-num">02 — URL & Malware Intelligence</div>
+  <h2>URLhaus + VirusTotal — What's Being Served?</h2>
+
+  <p>
+    With the malicious URL and IP identified, the next step was threat intel lookups. URLhaus confirmed the URL as actively malicious and revealed the malware families associated with it.
+  </p>
+
+  <h3>URLhaus Lookup</h3>
+  <p>
+    The malicious URL had been reported to URLhaus with three distinct malware families attached — a loader serving multiple payloads simultaneously:
+  </p>
+
+  <div class="malware-grid">
+    <div class="malware-card rat">
+      <div class="malware-type">Remote Access Trojan</div>
+      <div class="malware-name">AsyncRAT</div>
+      <div class="malware-desc">Lightweight open-source RAT. Provides full remote control — keylogging, screen capture, file access, command execution. Heavily used in commodity phishing campaigns.</div>
+    </div>
+    <div class="malware-card rat">
+      <div class="malware-type">Remote Access Trojan</div>
+      <div class="malware-name">BitRat</div>
+      <div class="malware-desc">Feature-rich commercial RAT with credential harvesting, webcam access, HVNC (hidden desktop), and cryptocurrency wallet theft capabilities.</div>
+    </div>
+    <div class="malware-card miner">
+      <div class="malware-type">Cryptominer</div>
+      <div class="malware-name">CoinMiner</div>
+      <div class="malware-desc">Hijacks victim CPU/GPU resources to mine cryptocurrency for the attacker. Often deployed alongside RATs for passive financial gain while maintaining remote access.</div>
+    </div>
+  </div>
+
+  <div class="alert intel">
+    <div class="alert-title">🧠 Multi-Payload Strategy</div>
+    Deploying three malware families simultaneously is deliberate. The RATs (AsyncRAT + BitRat) provide persistent access and data exfiltration capability. The CoinMiner generates passive revenue. This is a <strong>financially motivated threat actor</strong> maximizing return from each compromised machine — access sold or used directly, plus ongoing mining revenue.
+  </div>
+
+  <h3>CoinMiner — Secondary C2 Infrastructure</h3>
+  <p>
+    VirusTotal analysis of the CoinMiner sample revealed it reaches out to a second URL beyond the initial loader — pulling additional components required for the attack:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">coinminer — secondary request</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># Additional URL contacted by CoinMiner post-execution:</span></div>
+      <div><span class="out">GET <span class="hi">http://ripley.studio/loader/uploads/QamjttrbvJpeg</span></span></div>
+      <br>
+      <div><span class="comment"># Note: .jpeg extension masking a non-image payload</span></div>
+      <div><span class="comment"># Used to download supplementary attack components</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 03 BITRAT DEEP DIVE -->
+<div class="section">
+  <div class="section-num">03 — BitRat Deep Dive</div>
+  <h2>Persistence, Evasion & Loader Behavior</h2>
+
+  <h3>Registry Persistence</h3>
+  <p>
+    VirusTotal analysis of the BitRat executable revealed it establishes persistence via a suspicious AutoRun registry key — a classic Windows persistence mechanism that survives reboots:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">bitrat — registry persistence key</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># Suspicious AutoRun entry created by BitRat:</span></div>
+      <div><span class="path">HKEY_CURRENT_USER\Software\Microsoft\Windows\</span></div>
+      <div><span class="path">CurrentVersion\Run\<span class="red-txt">Jzwnix</span></span></div>
+      <br>
+      <div><span class="comment"># "Jzwnix" — random-looking key name, classic obfuscation</span></div>
+      <div><span class="comment"># This key executes BitRat automatically on every user login</span></div>
+      <br>
+      <div><span class="comment"># BitRat SHA256:</span></div>
+      <div><span class="out">b67628695c2df7a302003a06539759a16885</span></div>
+      <div><span class="out">0e59b9a4485555bc1c8c639539</span></div>
+    </div>
+  </div>
+
+  <div class="alert warn">
+    <div class="alert-title">⚠️ Persistence via Run Key</div>
+    <code>HKCU\Software\Microsoft\Windows\CurrentVersion\Run</code> is one of the most commonly abused persistence locations in Windows. Any value added here executes automatically at login. The randomized key name <strong>Jzwnix</strong> is designed to blend in and avoid casual inspection. MITRE ATT&CK: <strong>T1547.001</strong>.
+  </div>
+
+  <h3>Loader Behavior — How BitRat Gets Delivered</h3>
+  <p>
+    The VirusTotal Behavior tab for BitRat revealed exactly how the loader retrieves the BitRat payload — a plain GET request back to the same staging server:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">loader → bitrat retrieval</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># Loader makes GET request to retrieve BitRat binary:</span></div>
+      <div><span class="out">GET <span class="hi">http://107.175.247.199/loader/server.exe</span></span></div>
+      <br>
+      <div><span class="comment"># Same IP as initial install.exe download</span></div>
+      <div><span class="comment"># Confirms 107.175.247.199 is the primary staging server</span></div>
+      <div><span class="comment"># /loader/server.exe → BitRat payload</span></div>
+      <div><span class="comment"># /loader/install.exe → initial dropper</span></div>
+    </div>
+  </div>
+
+  <h3>Detection Evasion — Sleep Injection</h3>
+  <p>
+    VirusTotal's report flagged a <strong>base64-encoded PowerShell command</strong> embedded in the malware. Decoding it revealed a simple but effective evasion technique:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">base64 powershell — decoded</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># Encoded command found in VirusTotal report</span></div>
+      <div><span class="comment"># Base64 decoded reveals:</span></div>
+      <br>
+      <div><span class="out">Start-Sleep <span class="hi">-Seconds 50</span></span></div>
+      <br>
+      <div><span class="comment"># Purpose: introduce a 50-second delay before execution</span></div>
+      <div><span class="comment"># Sandboxes often have short analysis windows (30-60s)</span></div>
+      <div><span class="comment"># Sleeping past the analysis window = sandbox evasion</span></div>
+    </div>
+  </div>
+
+  <div class="alert blue">
+    <div class="alert-title">🛡️ Detection Evasion via Time Delay</div>
+    <code>Start-Sleep -Seconds 50</code> is a classic sandbox evasion technique. Automated malware sandboxes typically analyze samples for a fixed window. A 50-second sleep causes the malware to appear benign during analysis and only execute malicious behavior after the sandbox has finished. MITRE ATT&CK: <strong>T1497.003 — Time Based Evasion</strong>.
+  </div>
+</div>
+
+<!-- 04 C2 INFRASTRUCTURE -->
+<div class="section">
+  <div class="section-num">04 — C2 Infrastructure</div>
+  <h2>Command & Control — Two Channels, One Telegram Bot</h2>
+
+  <h3>AsyncRAT C2 Domain</h3>
+  <p>
+    Community analysis on VirusTotal for the AsyncRAT sample identified the C2 domain and port:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">asyncrat — c2 infrastructure</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># C2 server identified via VirusTotal community analysis:</span></div>
+      <div><span class="out">C2 Domain: <span class="red-txt">ghost.myaiv.org</span></span></div>
+      <div><span class="out">C2 Port:   <span class="hi">5005</span></span></div>
+      <br>
+      <div><span class="comment"># AsyncRAT communicates back to this domain</span></div>
+      <div><span class="comment"># for command execution and data exfiltration</span></div>
+    </div>
+  </div>
+
+  <h3>Telegram Bot Exfiltration</h3>
+  <p>
+    Following the Recorded Future Triage report linked from VirusTotal's community section revealed something particularly interesting about AsyncRAT's network behavior — it reaches out to <strong>Telegram's API</strong>:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">asyncrat — telegram exfiltration</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># Network request identified in Recorded Future Triage:</span></div>
+      <div><span class="out">Method: GET</span></div>
+      <div><span class="out">Target: <span class="hi">api.telegram.org</span></span></div>
+      <div><span class="out">Bot ID: <span class="red-txt">5610920260</span></span></div>
+      <br>
+      <div><span class="comment"># Attacker controls a Telegram bot</span></div>
+      <div><span class="comment"># Stolen data / victim notifications sent directly to Telegram</span></div>
+      <div><span class="comment"># Telegram traffic blends with normal HTTPS — hard to block</span></div>
+    </div>
+  </div>
+
+  <div class="alert intel">
+    <div class="alert-title">📡 Why Telegram for C2?</div>
+    Using Telegram as a C2 channel is an increasingly popular tactic. Telegram traffic uses standard HTTPS on port 443 — it looks identical to normal encrypted web traffic at the network layer. Most organizations can't block Telegram without causing significant disruption, and the attacker can receive stolen data and send commands from any device with the Telegram app. No custom infrastructure required, no domain to take down.
+  </div>
+
+  <div class="findings-grid">
+    <div class="finding-card green">
+      <div class="finding-label">Staging Server</div>
+      <div class="finding-value">107.175.247.199</div>
+    </div>
+    <div class="finding-card red">
+      <div class="finding-label">AsyncRAT C2</div>
+      <div class="finding-value">ghost.myaiv.org:5005</div>
+    </div>
+    <div class="finding-card orange">
+      <div class="finding-label">Secondary Payload Host</div>
+      <div class="finding-value">ripley.studio</div>
+    </div>
+    <div class="finding-card purple">
+      <div class="finding-label">Telegram Bot ID</div>
+      <div class="finding-value">5610920260</div>
+    </div>
+  </div>
+</div>
+
+<!-- 05 ATTACK CHAIN -->
+<div class="section">
+  <div class="section-num">05 — Full Attack Chain</div>
+  <h2>Reconstructing the Kill Chain</h2>
+
+  <div class="attack-chain">
+    <div class="chain-step">
+      <div class="chain-left"><div class="chain-num">01</div><div class="chain-connector"></div></div>
+      <div class="chain-content">
+        <div class="chain-title">Spear Phishing Email Delivered</div>
+        <div class="chain-desc">Faculty receive email claiming a $625,000 unauthorized purchase. Appears from trusted source. SPF softfail + DKIM fail in headers. Sender IP: 18.208.22.104. Return-path points to compromised Colombian university account.</div>
+        <span class="chain-tag">T1566.002 — Phishing: Spearphishing Link</span>
+      </div>
+    </div>
+    <div class="chain-step">
+      <div class="chain-left"><div class="chain-num orange">02</div><div class="chain-connector"></div></div>
+      <div class="chain-content">
+        <div class="chain-title">Victim Clicks Invoice Download Link</div>
+        <div class="chain-desc">HTTP link (no HTTPS) points to raw IP 107.175.247.199/loader/install.exe. Victim downloads and executes what they believe is an invoice PDF.</div>
+        <span class="chain-tag orange">T1204.002 — User Execution: Malicious File</span>
+      </div>
+    </div>
+    <div class="chain-step">
+      <div class="chain-left"><div class="chain-num orange">03</div><div class="chain-connector"></div></div>
+      <div class="chain-content">
+        <div class="chain-title">Loader Executes — Sleep Evasion Triggered</div>
+        <div class="chain-desc">install.exe runs a base64-encoded PowerShell command: Start-Sleep -Seconds 50. Introduces delay to evade sandbox detection before proceeding with payload deployment.</div>
+        <span class="chain-tag orange">T1497.003 — Time Based Evasion</span>
+      </div>
+    </div>
+    <div class="chain-step">
+      <div class="chain-left"><div class="chain-num purple">04</div><div class="chain-connector"></div></div>
+      <div class="chain-content">
+        <div class="chain-title">Multi-Payload Deployment</div>
+        <div class="chain-desc">Loader retrieves BitRat via GET to /loader/server.exe. CoinMiner pulled separately via ripley.studio. AsyncRAT deployed alongside. Three malware families active on victim machine simultaneously.</div>
+        <span class="chain-tag purple">T1105 — Ingress Tool Transfer</span>
+      </div>
+    </div>
+    <div class="chain-step">
+      <div class="chain-left"><div class="chain-num red">05</div><div class="chain-connector"></div></div>
+      <div class="chain-content">
+        <div class="chain-title">BitRat Establishes Persistence</div>
+        <div class="chain-desc">Registry AutoRun key created at HKCU\...\Run\Jzwnix — BitRat executes automatically on every login. Randomized key name designed to avoid casual inspection.</div>
+        <span class="chain-tag red">T1547.001 — Registry Run Keys</span>
+      </div>
+    </div>
+    <div class="chain-step">
+      <div class="chain-left"><div class="chain-num red">06</div></div>
+      <div class="chain-content">
+        <div class="chain-title">C2 Active — Telegram Exfiltration</div>
+        <div class="chain-desc">AsyncRAT connects to ghost.myaiv.org:5005 for command and control. Also makes GET requests to Telegram Bot ID 5610920260 — stolen data exfiltrated via Telegram API. CoinMiner begins mining in background.</div>
+        <span class="chain-tag red">T1071.001 — Web Protocols C2</span>
+        <span class="chain-tag red" style="margin-left:6px;">T1567 — Exfiltration Over Web Service</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 06 MITRE -->
+<div class="section">
+  <div class="section-num">06 — MITRE ATT&CK Mapping</div>
+  <h2>Techniques Observed</h2>
+
+  <div class="mitre-grid">
+    <div class="mitre-card">
+      <div class="mitre-id">T1566.002</div>
+      <div class="mitre-name">Spearphishing Link</div>
+      <div class="mitre-desc">Invoice download link in targeted email to faculty members</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1204.002</div>
+      <div class="mitre-name">Malicious File Execution</div>
+      <div class="mitre-desc">Victim executes install.exe disguised as invoice document</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1497.003</div>
+      <div class="mitre-name">Time Based Evasion</div>
+      <div class="mitre-desc">Start-Sleep -Seconds 50 to evade sandbox analysis window</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1105</div>
+      <div class="mitre-name">Ingress Tool Transfer</div>
+      <div class="mitre-desc">Loader retrieves BitRat, AsyncRAT, and CoinMiner from staging server</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1547.001</div>
+      <div class="mitre-name">Registry Run Keys</div>
+      <div class="mitre-desc">HKCU\...\Run\Jzwnix for BitRat persistence across reboots</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1059.001</div>
+      <div class="mitre-name">PowerShell</div>
+      <div class="mitre-desc">Base64-encoded PowerShell command for sleep-based evasion</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1071.001</div>
+      <div class="mitre-name">Web Protocols C2</div>
+      <div class="mitre-desc">AsyncRAT C2 over standard web protocols to ghost.myaiv.org:5005</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1567</div>
+      <div class="mitre-name">Exfiltration Over Web Service</div>
+      <div class="mitre-desc">Data exfiltration via Telegram Bot API (Bot ID: 5610920260)</div>
+    </div>
+  </div>
+</div>
+
+<!-- 07 IOC -->
+<div class="section">
+  <div class="section-num">07 — IOC Summary</div>
+  <h2>Indicators of Compromise</h2>
+
+  <div class="ioc-wrap">
+    <table class="ioc-table">
+      <thead>
+        <tr><th>Indicator</th><th>Value</th><th>Type</th><th>Confidence</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Sender IP</td><td><code>18.208.22.104</code></td><td><span class="badge badge-orange">IP</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Staging Server</td><td><code>107.175.247.199</code></td><td><span class="badge badge-orange">IP</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Initial Dropper</td><td><code>http://107.175.247.199/loader/install.exe</code></td><td><span class="badge badge-red">URL</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>BitRat Payload</td><td><code>http://107.175.247.199/loader/server.exe</code></td><td><span class="badge badge-red">URL</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Secondary Payload</td><td><code>http://ripley.studio/loader/uploads/QamjttrbvJpeg</code></td><td><span class="badge badge-red">URL</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>AsyncRAT C2</td><td><code>ghost.myaiv.org:5005</code></td><td><span class="badge badge-purple">Domain</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Telegram Bot</td><td><code>5610920260</code></td><td><span class="badge badge-blue">Bot ID</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Persistence Key</td><td><code>HKCU\...\Run\Jzwnix</code></td><td><span class="badge badge-orange">Registry</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>BitRat SHA256</td><td><code>b67628695c2df7a302...63 9539</code></td><td><span class="badge badge-green">Hash</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Return-Path</td><td><code>erikajohana.lopez@uptc.edu.co</code></td><td><span class="badge badge-yellow">Email</span></td><td><span class="badge badge-yellow">MEDIUM</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 08 TAKEAWAYS -->
+<div class="section">
+  <div class="section-num">08 — Takeaways</div>
+  <h2>What This Investigation Teaches Us</h2>
+
+  <h3>Email Authentication Is the First Line of Defense</h3>
+  <p>
+    SPF softfail + DKIM fail on the same email should trigger automatic quarantine. Organizations that deploy SPF, DKIM, and DMARC together — with DMARC set to <code>p=reject</code> — would have stopped this attack before it reached any inbox. The authentication infrastructure exists; it just needs to be properly configured and enforced.
+  </p>
+
+  <h3>Four URL Red Flags in Plain Sight</h3>
+  <p>
+    The malicious download URL was screaming its intentions: HTTP not HTTPS, raw IP address, <code>/loader/</code> path, and a <code>.exe</code> posing as an invoice. Security awareness training that teaches users to inspect URLs before clicking — especially for financial claims — directly mitigates this vector.
+  </p>
+
+  <h3>Telegram as C2 Is a Growing Blind Spot</h3>
+  <p>
+    Using Telegram's API for exfiltration is increasingly popular precisely because it's hard to defend against without blocking a widely-used communication platform. Network monitoring that looks for unusual Telegram API call patterns — particularly <code>api.telegram.org</code> requests from non-browser processes — is more effective than trying to block the platform entirely.
+  </p>
+
+  <h3>Three Malware Families = Maximum Attacker ROI</h3>
+  <p>
+    Deploying AsyncRAT + BitRat + CoinMiner in one campaign is financially rational from the attacker's perspective. RATs provide ongoing access and credential theft. The miner generates passive income. If defenders detect and remove one, the others persist. Defense-in-depth — endpoint detection, network monitoring, and registry auditing — is necessary to catch all three.
+  </p>
+
+  <div class="highlight-box" style="margin-top:32px;">
+    <div style="font-family:var(--sans);font-size:15px;font-weight:700;color:var(--heading);margin-bottom:10px;">Tools Used — This Investigation</div>
+    <div style="font-size:13px;line-height:2.2;color:var(--text);">
+      <code>Email Header Analyzer</code> — SPF/DKIM/sender IP extraction<br>
+      <code>URLhaus</code> — Malicious URL lookup &amp; malware family identification<br>
+      <code>VirusTotal</code> — SHA256 hash lookup, behavior analysis, community reports<br>
+      <code>Recorded Future Triage</code> — AsyncRAT network behavior analysis<br>
+      <code>MITRE ATT&CK</code> — TTP mapping &amp; technique identification<br>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <div class="footer-sig">Written as a walkthrough for CyberDefenders PhishStrike Lab by</div>
+  <div class="footer-name">WizB</div>
+  <div style="font-size:11px;color:var(--muted);margin-top:8px;letter-spacing:1px;">DFIR · OSINT · NIT Silchar ECE<span class="cursor"></span></div>
+</div>
+
+</div>
+</body>
+</html>
