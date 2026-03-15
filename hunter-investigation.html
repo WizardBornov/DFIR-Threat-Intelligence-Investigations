@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hunter — The Insider Threat | WizB</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #0f1318;
+    --surface2: #151b22;
+    --border: #1e2730;
+    --accent: #e8b04b;
+    --accent2: #00d4aa;
+    --accent3: #ff4757;
+    --accent4: #7c5cbf;
+    --text: #c9d1d9;
+    --muted: #586069;
+    --heading: #e6edf3;
+    --red: #ff4757;
+    --yellow: #ffd32a;
+    --blue: #79b8ff;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 15px;
+    line-height: 1.75;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(232,176,75,0.008) 2px, rgba(232,176,75,0.008) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  .back-bar {
+    background: rgba(10,12,15,0.9);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+
+  .back-bar a {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    text-decoration: none;
+    letter-spacing: 1px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: color 0.2s;
+  }
+
+  .back-bar a:hover { color: var(--accent); }
+
+  .hero {
+    position: relative;
+    padding: 60px 0;
+    text-align: center;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(232,176,75,0.07) 0%, transparent 70%);
+  }
+
+  .tag-line {
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    opacity: 0.8;
+  }
+
+  .hero h1 {
+    font-family: var(--sans);
+    font-size: clamp(30px, 5vw, 56px);
+    font-weight: 800;
+    color: var(--heading);
+    line-height: 1.15;
+    margin-bottom: 16px;
+    position: relative;
+  }
+
+  .hero h1 .acc  { color: var(--accent); }
+  .hero h1 .red  { color: var(--red); }
+
+  .hero-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 32px;
+    letter-spacing: 1px;
+  }
+
+  .meta-strip {
+    display: inline-flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    justify-content: center;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .meta-strip span { display: flex; align-items: center; gap: 6px; }
+  .meta-strip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  .section { padding: 56px 0; border-bottom: 1px solid var(--border); }
+
+  .section-num {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+
+  h2 {
+    font-family: var(--sans);
+    font-size: clamp(20px, 3vw, 28px);
+    font-weight: 700;
+    color: var(--heading);
+    margin-bottom: 20px;
+    line-height: 1.3;
+  }
+
+  h3 {
+    font-family: var(--sans);
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--heading);
+    margin: 32px 0 14px;
+  }
+
+  p { margin-bottom: 16px; color: var(--text); }
+
+  .alert {
+    border-left: 3px solid var(--accent);
+    background: rgba(232,176,75,0.05);
+    padding: 16px 20px;
+    margin: 28px 0;
+    border-radius: 0 6px 6px 0;
+    font-size: 13px;
+  }
+
+  .alert.warn   { border-color: var(--accent3); background: rgba(255,71,87,0.06); }
+  .alert.intel  { border-color: var(--accent4); background: rgba(124,92,191,0.06); }
+  .alert.green  { border-color: var(--accent2); background: rgba(0,212,170,0.05); }
+  .alert.blue   { border-color: var(--blue);    background: rgba(121,184,255,0.06); }
+
+  .alert-title {
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    color: var(--accent);
+  }
+
+  .alert.warn  .alert-title  { color: var(--red); }
+  .alert.intel .alert-title  { color: #a78bfa; }
+  .alert.green .alert-title  { color: var(--accent2); }
+  .alert.blue  .alert-title  { color: var(--blue); }
+
+  .terminal {
+    background: #060809;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 24px 0;
+    overflow: hidden;
+  }
+
+  .terminal-header {
+    background: var(--surface2);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .terminal-dots { display: flex; gap: 6px; }
+  .terminal-dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .terminal-dots .r { background: #ff5f57; }
+  .terminal-dots .y { background: #febc2e; }
+  .terminal-dots .g { background: #28c840; }
+  .terminal-title { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+
+  .terminal-body {
+    padding: 20px;
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-x: auto;
+  }
+
+  .cmd     { color: #79b8ff; }
+  .out     { color: #85e89d; }
+  .comment { color: var(--muted); font-style: italic; }
+  .hi      { color: var(--yellow); }
+  .path    { color: #d2a8ff; }
+  .red-txt { color: var(--red); }
+  .grn-txt { color: var(--accent2); }
+  .yel-txt { color: var(--accent); }
+
+  .findings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin: 24px 0;
+  }
+
+  .finding-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .finding-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .finding-card.gold::before   { background: var(--accent); }
+  .finding-card.green::before  { background: var(--accent2); }
+  .finding-card.red::before    { background: var(--red); }
+  .finding-card.purple::before { background: var(--accent4); }
+  .finding-card.blue::before   { background: var(--blue); }
+
+  .finding-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .finding-value { font-size: 13px; font-weight: 700; color: var(--heading); word-break: break-all; line-height: 1.4; }
+
+  /* Timeline */
+  .timeline { display: flex; flex-direction: column; margin: 28px 0; }
+
+  .tl-item { display: flex; gap: 16px; align-items: flex-start; }
+
+  .tl-left { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; width: 36px; }
+
+  .tl-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--accent); flex-shrink: 0;
+    margin-top: 6px;
+    box-shadow: 0 0 8px rgba(232,176,75,0.4);
+  }
+
+  .tl-dot.red    { background: var(--red);    box-shadow: 0 0 8px rgba(255,71,87,0.4); }
+  .tl-dot.green  { background: var(--accent2); box-shadow: 0 0 8px rgba(0,212,170,0.4); }
+  .tl-dot.purple { background: var(--accent4); box-shadow: 0 0 8px rgba(124,92,191,0.4); }
+
+  .tl-connector { width: 2px; flex: 1; min-height: 20px; background: var(--border); margin: 4px 0; }
+
+  .tl-content { flex: 1; padding-bottom: 24px; }
+  .tl-item:last-child .tl-content { padding-bottom: 0; }
+
+  .tl-time  { font-size: 11px; color: var(--accent); letter-spacing: 1px; margin-bottom: 4px; }
+  .tl-title { font-family: var(--sans); font-weight: 700; color: var(--heading); font-size: 14px; margin-bottom: 4px; }
+  .tl-desc  { font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+  /* Attack chain */
+  .attack-chain { display: flex; flex-direction: column; margin: 28px 0; }
+  .chain-step { display: flex; gap: 16px; align-items: flex-start; }
+  .chain-left { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; width: 36px; }
+  .chain-num {
+    width: 32px; height: 32px; border-radius: 6px;
+    background: var(--accent); color: var(--bg);
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .chain-num.red    { background: var(--red); }
+  .chain-num.green  { background: var(--accent2); color: #000; }
+  .chain-num.purple { background: var(--accent4); }
+  .chain-num.blue   { background: var(--blue); color: #000; }
+  .chain-connector { width: 2px; flex: 1; min-height: 24px; background: var(--border); margin: 4px 0; }
+  .chain-content { flex: 1; padding-bottom: 28px; }
+  .chain-step:last-child .chain-content { padding-bottom: 0; }
+  .chain-title { font-family: var(--sans); font-weight: 700; color: var(--heading); font-size: 15px; margin-bottom: 6px; margin-top: 4px; }
+  .chain-desc  { font-size: 13px; color: var(--muted); line-height: 1.7; }
+  .chain-tag {
+    display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 3px;
+    font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-top: 8px;
+    background: rgba(232,176,75,0.1); color: var(--accent); border: 1px solid rgba(232,176,75,0.25);
+  }
+  .chain-tag.red    { background: rgba(255,71,87,0.1);  color: var(--red);     border-color: rgba(255,71,87,0.25); }
+  .chain-tag.green  { background: rgba(0,212,170,0.1);  color: var(--accent2); border-color: rgba(0,212,170,0.25); }
+  .chain-tag.purple { background: rgba(124,92,191,0.1); color: #a78bfa;        border-color: rgba(124,92,191,0.25); }
+  .chain-tag.blue   { background: rgba(121,184,255,0.1);color: var(--blue);    border-color: rgba(121,184,255,0.25); }
+
+  /* MITRE grid */
+  .mitre-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 24px 0; }
+  .mitre-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px 18px; border-left: 3px solid var(--accent4);
+  }
+  .mitre-id   { font-size: 11px; color: #a78bfa; letter-spacing: 1px; font-weight: 700; margin-bottom: 6px; }
+  .mitre-name { font-size: 13px; color: var(--heading); font-weight: 600; margin-bottom: 4px; }
+  .mitre-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+  /* IOC table */
+  .ioc-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 24px 0; }
+  .ioc-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 520px; }
+  .ioc-table th {
+    background: var(--surface2); color: var(--accent);
+    font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border);
+  }
+  .ioc-table td { padding: 12px 16px; border-bottom: 1px solid rgba(30,39,48,0.5); vertical-align: top; }
+  .ioc-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; letter-spacing: 1px; font-weight: 700; text-transform: uppercase; }
+  .badge-red    { background: rgba(255,71,87,0.15);  color: var(--red);     border: 1px solid rgba(255,71,87,0.3); }
+  .badge-yellow { background: rgba(232,176,75,0.1);  color: var(--accent);  border: 1px solid rgba(232,176,75,0.25); }
+  .badge-green  { background: rgba(0,212,170,0.1);   color: var(--accent2); border: 1px solid rgba(0,212,170,0.25); }
+  .badge-purple { background: rgba(124,92,191,0.15); color: #a78bfa;        border: 1px solid rgba(124,92,191,0.3); }
+  .badge-blue   { background: rgba(121,184,255,0.1); color: var(--blue);    border: 1px solid rgba(121,184,255,0.3); }
+
+  code {
+    background: var(--surface2); padding: 2px 7px; border-radius: 4px;
+    font-family: var(--mono); font-size: 12px; color: #d2a8ff;
+    border: 1px solid var(--border);
+  }
+
+  .highlight-box {
+    background: linear-gradient(135deg, rgba(232,176,75,0.05), rgba(124,92,191,0.05));
+    border: 1px solid rgba(232,176,75,0.2);
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin: 28px 0;
+  }
+
+  .evidence-img {
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    margin: 16px 0;
+  }
+
+  .img-caption {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    margin-top: -8px;
+    margin-bottom: 24px;
+    letter-spacing: 1px;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
+  .cursor { display: inline-block; width: 8px; height: 15px; background: var(--accent); vertical-align: middle; animation: blink 1.2s infinite; margin-left: 2px; }
+
+  .footer { padding: 48px 0; text-align: center; }
+  .footer-sig  { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .footer-name { font-family: var(--sans); font-size: 18px; font-weight: 700; color: var(--accent); }
+
+  @media (max-width: 600px) {
+    .findings-grid { grid-template-columns: 1fr; }
+    .mitre-grid    { grid-template-columns: 1fr; }
+    .container { padding: 0 16px; }
+    .section   { padding: 40px 0; }
+    .hero      { padding: 40px 0; }
+    .terminal-body { font-size: 11px; }
+    h2 { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="back-bar">
+  <a href="./index.html">← Back to Writeups</a>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="container">
+    <div class="tag-line">CyberDefenders · Hunter Lab · Disk Forensics · Insider Threat</div>
+    <h1>
+      <span class="acc">Hunter</span> —<br>
+      The <span class="red">Insider Threat</span><br>
+      Investigation
+    </h1>
+    <div class="hero-sub">Full Disk Forensics Walkthrough · Windows 8.1 · FTK Imager · Autopsy · EZ Tools</div>
+    <div class="meta-strip">
+      <span><span class="dot"></span> Disk Image Forensics</span>
+      <span><span class="dot"></span> Registry Analysis</span>
+      <span><span class="dot"></span> Email & Artifact Recovery</span>
+      <span><span class="dot"></span> Anti-Forensics Detection</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- 00 BACKGROUND -->
+<div class="section">
+  <div class="section-num">00 — Background</div>
+  <h2>The Case: Illegal Port Scanning From Inside the Network</h2>
+
+  <p>
+    The SOC team was alerted to <strong>illegal port scanning activity</strong> originating from an employee's system. When confronted, the employee — identified only as <strong>Hunter</strong> — claimed to have no knowledge of the activity and suggested the system may have been compromised by malware.
+  </p>
+  <p>
+    The investigation tells a very different story. A disk image of Hunter's Windows 8.1 Enterprise machine was acquired and handed to us for analysis. What we found was not malware. It was a deliberate, methodical insider threat operation — an employee who had recently been <strong>denied a salary raise</strong>, who sought outside help, and who was building capability to exfiltrate sensitive data while actively covering their tracks.
+  </p>
+
+  <div class="alert warn">
+    <div class="alert-title">⚠️ Investigator's Theory — Before We Begin</div>
+    The evidence strongly suggests Hunter intentionally installed offensive tools, was planning something beyond simple port scanning, sought outside technical assistance due to weak personal skills, and began an active data exfiltration operation before being caught.
+  </div>
+
+  <div class="findings-grid">
+    <div class="finding-card gold">
+      <div class="finding-label">Computer Name</div>
+      <div class="finding-value">4ORENSICS</div>
+    </div>
+    <div class="finding-card blue">
+      <div class="finding-label">IP Address</div>
+      <div class="finding-value">10.0.2.15</div>
+    </div>
+    <div class="finding-card green">
+      <div class="finding-label">Operating System</div>
+      <div class="finding-value">Windows 8.1 Enterprise</div>
+    </div>
+    <div class="finding-card red">
+      <div class="finding-label">Suspect Email</div>
+      <div class="finding-value">ehptmsgs@gmail.com</div>
+    </div>
+    <div class="finding-card purple">
+      <div class="finding-label">Computer SID</div>
+      <div class="finding-value">S-1-5-21-2489440558-275430...</div>
+    </div>
+    <div class="finding-card gold">
+      <div class="finding-label">DHCP Lease</div>
+      <div class="finding-value">21/06/2016 02:24:12 UTC</div>
+    </div>
+  </div>
+</div>
+
+<!-- 01 ACQUISITION & TRIAGE -->
+<div class="section">
+  <div class="section-num">01 — Acquisition & System Triage</div>
+  <h2>Mounting the Image & Establishing Ground Truth</h2>
+
+  <p>
+    The disk image was provided in <code>.ad1</code> format — FTK Imager's proprietary format. We mounted it using <strong>FTK Imager</strong> as a logical drive, then loaded it into <strong>Autopsy 4.22.1</strong> as a local disk data source for full artifact ingestion.
+  </p>
+
+  <p>
+    With the image mounted, the first step was establishing system context — who is this machine, what OS, when was it last active — using <strong>Registry Explorer</strong> against the SYSTEM and SOFTWARE hives.
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">registry explorer — system hive — machine identity</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># SYSTEM hive → ComputerName</span></div>
+      <div><span class="out">Computer Name: <span class="hi">4ORENSICS</span></span></div>
+      <div><span class="out">IP Address:    <span class="hi">10.0.2.15</span></span></div>
+      <div><span class="out">Timezone:      <span class="hi">PST (UTC-07:00)</span></span></div>
+      <div><span class="out">DHCP Lease:    <span class="hi">21/06/2016 02:24:12 UTC</span></span></div>
+      <br>
+      <div><span class="comment"># SOFTWARE hive → OS details & SID</span></div>
+      <div><span class="out">OS:  <span class="hi">Microsoft Windows 8.1 Enterprise</span></span></div>
+      <div><span class="out">SID: <span class="hi">S-1-5-21-2489440558-2754304563-710705792</span></span></div>
+      <br>
+      <div><span class="comment"># SAM hive → user account details</span></div>
+      <div><span class="out">User:            <span class="hi">Hunter</span></span></div>
+      <div><span class="out">Total Logins:    <span class="hi">3</span></span></div>
+      <div><span class="out">Last Login:      <span class="hi">2016-06-21 01:42:40</span></span></div>
+      <div><span class="out">Profile Path:    <span class="hi">C:\Users\Hunter</span></span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 02 PORT SCANNING -->
+<div class="section">
+  <div class="section-num">02 — The Port Scanning Activity</div>
+  <h2>Nmap + Zenmap — The Trigger That Started It All</h2>
+
+  <p>
+    The SOC alert was triggered by port scanning activity. Autopsy's <strong>Run Programs</strong> analysis confirmed two suspicious programs were executed — Nmap and its GUI frontend Zenmap — both installed and run deliberately.
+  </p>
+
+  <div class="alert intel">
+    <div class="alert-title">🔍 Key Finding — No Setup Program Detected</div>
+    Critically, <strong>no installer executable was found</strong> in the prefetch or run program artifacts. Nmap was installed without a standard setup wizard — highly suspicious and consistent with installation by a technically skilled outsider who knew how to avoid leaving obvious traces.
+  </div>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">autopsy — run programs — nmap activity</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># Nmap execution history from prefetch files:</span></div>
+      <div><span class="out">Program:  <span class="hi">NMAP.EXE</span></span></div>
+      <div><span class="out">Path:     /PROGRAM FILES (X86)/NMAP</span></div>
+      <div><span class="out">Run Count: <span class="hi">4</span> times</span></div>
+      <div><span class="out">Status:    NOT running at time of image acquisition</span></div>
+      <br>
+      <div><span class="out">Program:  <span class="hi">ZENMAP.EXE</span> (Nmap GUI)</span></div>
+      <div><span class="out">Path:     /PROGRAM FILES (X86)/NMAP</span></div>
+      <div><span class="out">Last Run:  <span class="hi">2016-06-21 12:08:13 UTC</span></span></div>
+      <div><span class="out">Status:    <span class="red-txt">Possibly still running at image time</span></span></div>
+      <br>
+      <div><span class="comment"># Setup installer: NOT FOUND in prefetch</span></div>
+      <div><span class="comment"># No NMAP-7.12-SETUP.EXE execution trace found</span></div>
+    </div>
+  </div>
+
+  <h3>The Scan Results — nmapscan.xml</h3>
+  <p>
+    Recent Documents analysis in Autopsy revealed the existence of <code>nmapscan.xml</code> on Hunter's Desktop — the output file from the completed network scan. Analyzing its contents revealed the full scope of the scanning activity:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">nmapscan.xml — scan results analysis</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># Scan metadata:</span></div>
+      <div><span class="out">Scanner Version: <span class="hi">Nmap 7.12</span></span></div>
+      <div><span class="out">Scan Completed:  <span class="hi">Tue Jun 21 05:12:09 2016</span></span></div>
+      <div><span class="out">Total Ports Scanned: <span class="hi">1000</span></span></div>
+      <div><span class="out">Closed Ports: <span class="hi">994</span></span></div>
+      <br>
+      <div><span class="comment"># Open / filtered ports found:</span></div>
+      <div><span class="out">22/tcp   open     <span class="grn-txt">ssh</span>       OpenSSH 6.6.1p1 Ubuntu</span></div>
+      <div><span class="out">25/tcp   filtered <span class="yel-txt">smtp</span></span></div>
+      <div><span class="out">26/tcp   filtered <span class="yel-txt">rsftp</span></span></div>
+      <div><span class="out">80/tcp   open     <span class="grn-txt">http</span>      Apache httpd 2.4.7 (Ubuntu)</span></div>
+      <div><span class="out">9929/tcp open     <span class="grn-txt">nping-echo</span> Nping echo</span></div>
+      <div><span class="out">31337/tcp open    <span class="red-txt">ssl/ncat-chat</span> Ncat chat</span></div>
+      <br>
+      <div><span class="comment"># Port 31337 — "elite" hacker port, Ncat listener</span></div>
+      <div><span class="comment"># HTTP title: "Go ahead and ScanMe!" — nmap.org test server</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 03 EMAIL EVIDENCE -->
+<div class="section">
+  <div class="section-num">03 — Email Evidence</div>
+  <h2>backup.pst — The Smoking Gun</h2>
+
+  <p>
+    Autopsy's email analysis module parsed <code>backup.pst</code> — an Outlook PST file found in Hunter's Outlook Files directory — and recovered <strong>47 email messages</strong>. What they revealed confirmed this was no malware infection. Hunter was actively coordinating with an external attacker.
+  </p>
+
+  <h3>The External Contact</h3>
+  <p>
+    A series of emails between Hunter (<code>ehptmsgs@gmail.com</code>) and an outside contact (<code>linux-rul3z@hotmail.com</code>, Skype: <strong>linux-rul3z</strong>) documented the full collaboration:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">email chain reconstruction — backup.pst</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># Email 1 — TeamViewer coordination</span></div>
+      <div><span class="out">From: Hunter → linux-rul3z</span></div>
+      <div><span class="out">Subject: RE: TeamViewer</span></div>
+      <div><span class="hi">"I just wanted to confirm the installation of TeamViewer</span></div>
+      <div><span class="hi"> as requested. When can we continue our discussion?"</span></div>
+      <br>
+      <div><span class="comment"># Reply from linux-rul3z:</span></div>
+      <div><span class="out">"I am currently at work. Let us meet after I finish work.</span></div>
+      <div><span class="out"> I will ping you on Skype."</span></div>
+      <br>
+      <div><span class="comment"># Email 2 — Data exfiltration staging</span></div>
+      <div><span class="out">From: Hunter → linux-rul3z</span></div>
+      <div><span class="out">Subject: RE: Pics</span></div>
+      <div><span class="hi">"Attached is a 7z archive of some of the pictures I told</span></div>
+      <div><span class="hi"> you about. The password will be given to you using Skype."</span></div>
+      <br>
+      <div><span class="comment"># Email 3 — DNS exfiltration training</span></div>
+      <div><span class="out">From: linux-rul3z → ehptmsgs@gmail.com</span></div>
+      <div><span class="out">Subject: DNS Exfil Videos</span></div>
+      <div><span class="out">"Some Exfil videos you might want to check:"</span></div>
+      <div><span class="out">[6 YouTube links to DNS exfiltration tutorials]</span></div>
+      <div><span class="out">"Happy hunting Hunter :)"</span></div>
+    </div>
+  </div>
+
+  <div class="alert warn">
+    <div class="alert-title">🚨 Confirmed Insider Threat Collaboration</div>
+    The email chain confirms: Hunter installed TeamViewer on the outsider's request to provide remote access. Files were archived and sent as email attachments. The outsider was actively teaching Hunter DNS exfiltration techniques. This is a coordinated insider-outsider attack.
+  </div>
+
+  <p>
+    Further investigation revealed Hunter had also sent <strong>network design diagrams</strong> to the outsider — and later deleted them after the outsider warned they might get caught. This deliberate deletion is a significant anti-forensics indicator.
+  </p>
+</div>
+
+<!-- 04 OFFENSIVE TOOLKIT -->
+<div class="section">
+  <div class="section-num">04 — The Offensive Toolkit</div>
+  <h2>What Was on Hunter's Machine</h2>
+
+  <p>
+    Autopsy's filesystem analysis revealed Hunter's Desktop and Downloads directory contained a concerning collection of offensive security tools — far beyond what any normal employee would have installed.
+  </p>
+
+  <h3>Desktop Contents</h3>
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">autopsy — /Users/Hunter/Desktop</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># Tools found on Hunter's Desktop:</span></div>
+      <div><span class="out"><span class="red-txt">Tor Browser</span>        → /Desktop/Tor Browser/Browser/firefox.exe</span></div>
+      <div><span class="comment">#   App ID: aa287709s4eaeaaa — used to bypass network monitoring</span></div>
+      <div><span class="out"><span class="red-txt">Zenmap</span>             → Nmap GUI shortcut</span></div>
+      <div><span class="out"><span class="red-txt">OllyDBG</span>            → Shortcut (debugger/RE tool)</span></div>
+      <div><span class="out"><span class="red-txt">pscp.exe</span>           → Shortcut (SCP file transfer)</span></div>
+      <div><span class="out"><span class="red-txt">putty.exe</span>          → Shortcut (SSH client)</span></div>
+      <div><span class="out"><span class="hi">nmapscan.xml</span>       → Network scan output file</span></div>
+    </div>
+  </div>
+
+  <h3>Downloads Directory</h3>
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">autopsy — /Users/Hunter/Downloads</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="out"><span class="red-txt">burpsuite-free_v1.7.03.jar</span></span></div>
+      <div><span class="comment"># Burp Suite — web exploitation & network traffic manipulation tool</span></div>
+      <div><span class="comment"># No legitimate reason for this on a standard employee machine</span></div>
+      <br>
+      <div><span class="out"><span class="hi">NMAP-7.12-SETUP.EXE</span>  → downloaded but no execution trace</span></div>
+      <div><span class="comment"># Setup file exists but was not run via installer</span></div>
+      <div><span class="comment"># Nmap installed by other means — consistent with outside help</span></div>
+    </div>
+  </div>
+
+  <h3>Documents Directory</h3>
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">autopsy — /Users/Hunter/Documents</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="out"><span class="red-txt">Ryan-VanAntwerp-thesis.pdf</span></span></div>
+      <div><span class="comment"># Academic thesis discussing data exfiltration techniques</span></div>
+      <div><span class="comment"># Hunter was actively researching how to exfiltrate data</span></div>
+      <br>
+      <div><span class="out">defcon-16-ricks.pdf</span></div>
+      <div><span class="out">DEFCON-22-Zoltan-Balazs-Bypass-firewall...pdf</span></div>
+      <div><span class="out">how_do_threat_actors_steal_your_data.pdf</span></div>
+      <div><span class="comment"># Collection of security research papers — not typical for a non-security employee</span></div>
+    </div>
+  </div>
+
+  <div class="alert intel">
+    <div class="alert-title">🧠 Analyst Note — Tor Browser Usage</div>
+    JLECmd jumplist analysis confirmed Tor Browser was actively used from <code>C:\Users\Hunter\Desktop\Tor Browser\Browser\firefox.exe</code>. Tor was specifically chosen to bypass network security monitoring controls — the employee was aware their activity might be logged and took deliberate steps to hide it.
+  </div>
+</div>
+
+<!-- 05 DATA STAGING & EXFILTRATION -->
+<div class="section">
+  <div class="section-num">05 — Data Staging & Exfiltration</div>
+  <h2>How Hunter Planned to Get the Data Out</h2>
+
+  <h3>The Exfil Folder</h3>
+  <p>
+    Autopsy's <strong>Shell Bags</strong> analysis revealed Hunter had created a dedicated staging folder with a name that left nothing to the imagination:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">autopsy — shell bags — staging directory</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># Shell bag entry — folder accessed by Hunter:</span></div>
+      <div><span class="out">Path: <span class="red-txt">My Computer\C:\Users\Hunte\Picture\Exfi</span></span></div>
+      <div><span class="out">Last Write: 2016-06-21 12:17:36 IST</span></div>
+      <div><span class="out">Full path:  <span class="red-txt">C:\Users\Hunter\Pictures\Exfil</span></span></div>
+      <br>
+      <div><span class="comment"># A folder literally named "Exfil" created to stage data</span></div>
+      <div><span class="comment"># Hunter was collecting data to exfiltrate here</span></div>
+    </div>
+  </div>
+
+  <h3>Pictures.7z — Email Exfiltration Attempt</h3>
+  <p>
+    Cross-referencing the email evidence with filesystem artifacts confirmed Hunter attempted to exfiltrate data by archiving staged files into a <strong>password-protected 7z archive</strong> named <code>Pictures.7z</code> and sending it as an email attachment — with the password communicated separately over Skype to avoid leaving it in email logs.
+  </p>
+
+  <h3>The XSS Payload — Hidden in an Image</h3>
+  <p>
+    The Recycle Bin contained an unusual artifact — a file masquerading as a <code>.jpg</code> image. Extracting the text content revealed it was not a normal image:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">recycle bin artifact — file masquerading as .jpg</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># File in Recycle Bin — appears to be a .jpg</span></div>
+      <div><span class="out">Original: 1920x1200 .jpg image of a kitten</span></div>
+      <div><span class="out">Status: <span class="red-txt">BROKEN — corrupted/modified</span></span></div>
+      <br>
+      <div><span class="comment"># Extracted text content reveals embedded script:</span></div>
+      <div><span class="out">Content: <span class="red-txt">inline frame tags + script content</span></span></div>
+      <div><span class="comment"># → XSS payload embedded in image file</span></div>
+      <div><span class="comment"># → Would execute once uploaded to a webpage</span></div>
+      <div><span class="comment"># → Technique: stored XSS via image upload</span></div>
+    </div>
+  </div>
+
+  <div class="alert warn">
+    <div class="alert-title">🚨 Steganography / Payload Embedding</div>
+    A kitten image with an XSS payload embedded inside it — disguised as a normal photo. This level of sophistication is consistent with outside help from a technically skilled attacker. Hunter's own skills were described as weak; this was not something they built alone.
+  </div>
+</div>
+
+<!-- 06 ANTI-FORENSICS -->
+<div class="section">
+  <div class="section-num">06 — Anti-Forensics</div>
+  <h2>Covering the Tracks — BCWipe & Deleted Evidence</h2>
+
+  <p>
+    Perhaps the most damning evidence of intent: Hunter didn't just exfiltrate data — they actively tried to destroy evidence of what they were doing.
+  </p>
+
+  <h3>BCWipe — File Shredder</h3>
+  <p>
+    <strong>BCWipe by Jetico</strong> is a professional-grade file wiping and disk shredding tool. Finding it on an employee's machine is a major red flag in any insider threat investigation. Autopsy confirmed it was not only installed but actively used:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">autopsy + prefetch — bcwipe execution evidence</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># BCWipe installation path:</span></div>
+      <div><span class="out">Path: <span class="red-txt">/Program Files (x86)/Jetico/BCWipe</span></span></div>
+      <br>
+      <div><span class="comment"># Prefetch analysis — execution count:</span></div>
+      <div><span class="out">BCWIPE.EXE executed: <span class="red-txt">5 times</span></span></div>
+      <br>
+      <div><span class="comment"># UnInstall.log also reveals "Crypto Swap" — disk encryption app</span></div>
+      <div><span class="out">Crypto Swap: disk encryption application — also installed</span></div>
+      <br>
+      <div><span class="comment"># Total prefetch files: 174 (after filtering 0-byte files)</span></div>
+    </div>
+  </div>
+
+  <div class="alert warn">
+    <div class="alert-title">🗑️ Evidence of Active Evidence Destruction</div>
+    BCWipe executed 5 times. The outsider explicitly warned Hunter they "might get caught" — and Hunter deleted the network design diagrams they had sent. This is deliberate, conscious evidence destruction. MITRE ATT&CK: <strong>T1485 — Data Destruction</strong> and <strong>T1070 — Indicator Removal</strong>.
+  </div>
+
+  <h3>USB Devices — Data Exfiltration via Physical Media</h3>
+  <p>
+    Autopsy's USB device analysis combined with SYSTEM registry hive lookup revealed two USB storage devices had been connected to Hunter's machine:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">system registry — USB storage devices</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># USB devices connected to Hunter's machine:</span></div>
+      <div><span class="out">Device 1 Serial: <span class="hi">07B20C03C80830A9</span></span></div>
+      <div><span class="out">Device 2 Serial: <span class="hi">AA16UXDKZDVSE9OU</span></span></div>
+      <br>
+      <div><span class="comment"># Two separate USB devices — possible data staging/transfer</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 07 ATTACK CHAIN -->
+<div class="section">
+  <div class="section-num">07 — Full Attack Timeline</div>
+  <h2>Reconstructing What Hunter Did</h2>
+
+  <div class="timeline">
+    <div class="tl-item">
+      <div class="tl-left"><div class="tl-dot"></div><div class="tl-connector"></div></div>
+      <div class="tl-content">
+        <div class="tl-time">Before 2016-06-21 — Prior Context</div>
+        <div class="tl-title">Salary Raise Rejected</div>
+        <div class="tl-desc">Hunter requests a salary increase. Request is denied. Behaviour becomes abnormal. Hunter begins planning — reaches out to external contact linux-rul3z for assistance.</div>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-left"><div class="tl-dot gold"></div><div class="tl-connector"></div></div>
+      <div class="tl-content">
+        <div class="tl-time">2016-06-21 01:42:40</div>
+        <div class="tl-title">Last Login — Activity Begins</div>
+        <div class="tl-desc">Hunter logs into the machine. SAM hive records this as the 3rd and final login. The day's activity begins.</div>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-left"><div class="tl-dot"></div><div class="tl-connector"></div></div>
+      <div class="tl-content">
+        <div class="tl-time">2016-06-21 02:24:12 UTC</div>
+        <div class="tl-title">DHCP Lease Obtained</div>
+        <div class="tl-desc">Machine connects to network. IP 10.0.2.15 assigned.</div>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-left"><div class="tl-dot purple"></div><div class="tl-connector"></div></div>
+      <div class="tl-content">
+        <div class="tl-time">2016-06-21 04:44 AM</div>
+        <div class="tl-title">BCWipe Installed — Anti-Forensics Begins</div>
+        <div class="tl-desc">BCWipe file shredder installed at 04:44 AM. Crypto Swap disk encryption also installed. Evidence destruction capability established before major activity.</div>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-left"><div class="tl-dot"></div><div class="tl-connector"></div></div>
+      <div class="tl-content">
+        <div class="tl-time">2016-06-21 05:12:09</div>
+        <div class="tl-title">Nmap Scan Completed</div>
+        <div class="tl-desc">Network scan of target finishes. 1000 ports scanned, 6 open/filtered ports identified including SSH (22), HTTP (80), and port 31337 (Ncat). Results saved to nmapscan.xml on Desktop.</div>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-left"><div class="tl-dot"></div><div class="tl-connector"></div></div>
+      <div class="tl-content">
+        <div class="tl-time">2016-06-21 09:37–09:38</div>
+        <div class="tl-title">Exfil Folder Created & Accessed</div>
+        <div class="tl-desc">Shell bags record creation and access of C:\Users\Hunter\Pictures\Exfil — a staging directory for data to be exfiltrated.</div>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-left"><div class="tl-dot red"></div><div class="tl-connector"></div></div>
+      <div class="tl-content">
+        <div class="tl-time">2016-06-21 11:06</div>
+        <div class="tl-title">Hash Suite Downloaded — Credential Harvesting</div>
+        <div class="tl-desc">Hash_Suite_Free downloaded to machine. A password hash extraction and cracking tool — indicates credential harvesting intent.</div>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-left"><div class="tl-dot red"></div><div class="tl-connector"></div></div>
+      <div class="tl-content">
+        <div class="tl-time">2016-06-21 12:08:13 UTC</div>
+        <div class="tl-title">Zenmap Executed — Possibly Still Running</div>
+        <div class="tl-desc">Zenmap (Nmap GUI) runs. Prefetch indicates it may still have been active when the disk image was taken.</div>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-left"><div class="tl-dot red"></div></div>
+      <div class="tl-content">
+        <div class="tl-time">2016-06-21 — SOC Alert Triggered</div>
+        <div class="tl-title">Port Scanning Detected — Investigation Begins</div>
+        <div class="tl-desc">SOC team detects illegal port scanning from Hunter's machine. Disk image acquired. Hunter claims malware. Investigation begins.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 08 MITRE -->
+<div class="section">
+  <div class="section-num">08 — MITRE ATT&CK Mapping</div>
+  <h2>Techniques Observed</h2>
+
+  <div class="mitre-grid">
+    <div class="mitre-card">
+      <div class="mitre-id">T1046</div>
+      <div class="mitre-name">Network Service Discovery</div>
+      <div class="mitre-desc">Nmap/Zenmap used to scan 1000 ports on target network</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1219</div>
+      <div class="mitre-name">Remote Access Software</div>
+      <div class="mitre-desc">TeamViewer installed on outsider's request for remote access</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1048</div>
+      <div class="mitre-name">Exfiltration Over Alt Protocol</div>
+      <div class="mitre-desc">DNS exfiltration techniques being learned; data sent via email attachments</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1560</div>
+      <div class="mitre-name">Archive Collected Data</div>
+      <div class="mitre-desc">Pictures.7z password-protected archive created for exfiltration</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1485</div>
+      <div class="mitre-name">Data Destruction</div>
+      <div class="mitre-desc">BCWipe run 5 times; network diagrams deleted after outsider warned of discovery risk</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1070</div>
+      <div class="mitre-name">Indicator Removal</div>
+      <div class="mitre-desc">Files deliberately deleted to remove evidence of exfiltration activity</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1090</div>
+      <div class="mitre-name">Proxy — Tor</div>
+      <div class="mitre-desc">Tor Browser used to bypass network security monitoring controls</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1027</div>
+      <div class="mitre-name">Obfuscated Files</div>
+      <div class="mitre-desc">XSS payload embedded in .jpg image file disguised as kitten photo</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1052</div>
+      <div class="mitre-name">Exfiltration Over Physical Medium</div>
+      <div class="mitre-desc">Two USB storage devices connected — possible physical data transfer</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1110</div>
+      <div class="mitre-name">Brute Force</div>
+      <div class="mitre-desc">Hash Suite Free downloaded — password hash extraction and cracking capability</div>
+    </div>
+  </div>
+</div>
+
+<!-- 09 IOC -->
+<div class="section">
+  <div class="section-num">09 — Key Artifacts Summary</div>
+  <h2>Evidence Recovered</h2>
+
+  <div class="ioc-wrap">
+    <table class="ioc-table">
+      <thead>
+        <tr><th>Artifact</th><th>Value / Location</th><th>Type</th><th>Significance</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Suspect Email</td><td><code>ehptmsgs@gmail.com</code></td><td><span class="badge badge-red">Identity</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>External Contact</td><td><code>linux-rul3z@hotmail.com</code></td><td><span class="badge badge-red">Identity</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Network Scan Output</td><td><code>Desktop/nmapscan.xml</code></td><td><span class="badge badge-yellow">File</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Exfil Staging Folder</td><td><code>C:\Users\Hunter\Pictures\Exfil</code></td><td><span class="badge badge-red">Directory</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Data Archive</td><td><code>Pictures.7z</code> — password protected</td><td><span class="badge badge-red">File</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>File Shredder</td><td><code>Program Files (x86)/Jetico/BCWipe</code> — run 5x</td><td><span class="badge badge-red">Software</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Tor Browser</td><td><code>Desktop/Tor Browser/Browser/firefox.exe</code></td><td><span class="badge badge-yellow">Software</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Web Exploitation Tool</td><td><code>Downloads/burpsuite-free_v1.7.03.jar</code></td><td><span class="badge badge-yellow">Software</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>XSS Payload</td><td>Embedded in .jpg in Recycle Bin</td><td><span class="badge badge-purple">Malicious File</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>USB Device 1</td><td><code>07B20C03C80830A9</code></td><td><span class="badge badge-blue">Hardware</span></td><td><span class="badge badge-yellow">MEDIUM</span></td></tr>
+        <tr><td>USB Device 2</td><td><code>AA16UXDKZDVSE9OU</code></td><td><span class="badge badge-blue">Hardware</span></td><td><span class="badge badge-yellow">MEDIUM</span></td></tr>
+        <tr><td>Exfil Research</td><td><code>Ryan-VanAntwerp-thesis.pdf</code></td><td><span class="badge badge-yellow">Document</span></td><td><span class="badge badge-yellow">MEDIUM</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 10 TAKEAWAYS -->
+<div class="section">
+  <div class="section-num">10 — Takeaways</div>
+  <h2>What This Investigation Teaches Us</h2>
+
+  <h3>Insider Threats Are Human Stories</h3>
+  <p>
+    Every other investigation in this series involved external attackers. Hunter is different — this is someone who sat at a desk, had a salary conversation that didn't go their way, and made a series of deliberate decisions over weeks. The artifacts don't lie: the rejection, the outside contact, the tools, the staging folder named "Exfil". The motive is written into every artifact.
+  </p>
+
+  <h3>Anti-Forensics Leaves Its Own Footprint</h3>
+  <p>
+    BCWipe run 5 times. Files deleted after the outsider warned of discovery risk. Ironically, these actions are themselves evidence. The act of trying to destroy evidence proves consciousness of guilt. Prefetch files recorded every BCWipe execution. Shell bags recorded every folder accessed including the Exfil staging directory. The very tools used to hide the activity became part of the evidence trail.
+  </p>
+
+  <h3>Disk Forensics Recovers What People Think Is Gone</h3>
+  <p>
+    Hunter deleted the network diagrams. The Recycle Bin still had artifacts. Prefetch still recorded execution history. Shell bags still showed folder access. Registry hives still held USB serial numbers. Disk forensics reconstructs the full picture even when the suspect believes they've cleaned up — because the OS keeps records in more places than most people realize.
+  </p>
+
+  <h3>No Setup Installer = Outside Hands</h3>
+  <p>
+    The absence of a Nmap setup executable in the prefetch — combined with Nmap being fully installed and running — was a key indicator that someone more technically skilled was involved. Forensic absence of evidence is itself evidence. When something that should exist doesn't, that's a finding.
+  </p>
+
+  <div class="highlight-box" style="margin-top:32px;">
+    <div style="font-family:var(--sans);font-size:15px;font-weight:700;color:var(--heading);margin-bottom:10px;">Tools Used — This Investigation</div>
+    <div style="font-size:13px;line-height:2.2;color:var(--text);">
+      <code>FTK Imager</code> — .ad1 disk image mounting and filesystem browsing<br>
+      <code>Autopsy 4.22.1</code> — Full artifact ingestion, email analysis, prefetch, shell bags<br>
+      <code>Registry Explorer</code> — SYSTEM, SOFTWARE, SAM hive analysis<br>
+      <code>JLECmd (EZ Tools)</code> — Jumplist analysis confirming Tor Browser usage<br>
+      <code>MITRE ATT&CK</code> — TTP mapping and technique identification<br>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <div class="footer-sig">Written as a walkthrough for CyberDefenders Hunter Lab by</div>
+  <div class="footer-name">WizB</div>
+  <div style="font-size:11px;color:var(--muted);margin-top:8px;letter-spacing:1px;">DFIR · OSINT · NIT Silchar ECE<span class="cursor"></span></div>
+</div>
+
+</div>
+</body>
+</html>
