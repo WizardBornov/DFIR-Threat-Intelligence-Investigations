@@ -417,7 +417,7 @@
   <h2>The Case: Unusual Activity on a Financial Workstation</h2>
 
   <p>
-    A forensic investigator at a <strong>financial institution</strong> receives an urgent callout. The SIEM has flagged unusual activity originating from a workstation with access to <strong>sensitive financial data</strong>. The machine belongs to a user named <strong>Elom</strong>. A memory dump has been acquired — the task is to figure out what happened before the evidence degrades further.
+    A forensic investigator at a <strong>financial institution</strong> receives an urgent callout. The SIEM has flagged unusual activity originating from a workstation with access to <strong>sensitive financial data</strong>. The machine belongs to a user named <strong>Elon</strong>. A memory dump has been acquired — the task is to figure out what happened before the evidence degrades further.
   </p>
 
   <p>
@@ -444,7 +444,7 @@
     </div>
     <div class="finding-card red">
       <div class="finding-label">Suspect User</div>
-      <div class="finding-value">Elom</div>
+      <div class="finding-value">Elon</div>
     </div>
     <div class="finding-card green">
       <div class="finding-label">Malware Family</div>
@@ -650,7 +650,7 @@
     </div>
     <div class="terminal-body">
       <div><span class="comment"># User account running the malicious process:</span></div>
-      <div><span class="out">Username: <span class="red-txt">Elom</span></span></div>
+      <div><span class="out">Username: <span class="red-txt">Elon</span></span></div>
       <br>
       <div><span class="comment"># The malware is running under the legitimate user's account</span></div>
       <div><span class="comment"># No privilege escalation needed — user-level access</span></div>
@@ -700,7 +700,7 @@
     <p style="font-size:13px;line-height:1.9;color:var(--text);margin-bottom:0;">
       StrelaStealer is not general-purpose malware. It is a <strong>credential stealer specifically engineered to target email clients</strong> — primarily Mozilla Thunderbird and Microsoft Outlook. It was first documented in late 2022 and has been in active development since, with multiple campaigns targeting organizations across Europe and the United States.<br><br>
       Its primary objective: extract email account credentials stored locally by the email client — usernames, passwords, server configurations — and exfiltrate them to the attacker's C2 infrastructure.<br><br>
-      The presence of <strong>thunderbird.exe</strong> in the malfind output wasn't a red herring. StrelaStealer had already injected into or was monitoring Thunderbird's process — the email client on a <strong>financial institution workstation</strong> was the prize. Whatever email credentials Elom's Thunderbird had stored — corporate email access, potentially financial system notifications, internal communications — StrelaStealer was there to take them.<br><br>
+      The presence of <strong>thunderbird.exe</strong> in the malfind output wasn't a red herring. StrelaStealer had already injected into or was monitoring Thunderbird's process — the email client on a <strong>financial institution workstation</strong> was the prize. Whatever email credentials Elon's Thunderbird had stored — corporate email access, potentially financial system notifications, internal communications — StrelaStealer was there to take them.<br><br>
       The hidden PowerShell window, the WebDAV C2 channel, the rundll32 LOLBin execution, the fileless DLL — all of it was infrastructure built for one purpose: to get StrelaStealer's hooks into that Thunderbird process without triggering an alert.
     </p>
   </div>
@@ -753,7 +753,7 @@
       <div class="proc-left"><div class="proc-num red">05</div></div>
       <div class="proc-content">
         <div class="proc-title">StrelaStealer Targets Thunderbird</div>
-        <div class="proc-desc">StrelaStealer payload executes under user "Elom". Targets thunderbird.exe — already running on the financial workstation. Email credentials extracted and exfiltrated to C2 at 45.9.74.32.</div>
+        <div class="proc-desc">StrelaStealer payload executes under user "Elon". Targets thunderbird.exe — already running on the financial workstation. Email credentials extracted and exfiltrated to C2 at 45.9.74.32.</div>
         <span class="proc-tag red">T1555 — Credentials from Password Stores</span>
       </div>
     </div>
@@ -827,7 +827,7 @@
         <tr><td>Malicious Process</td><td><code>powershell.exe</code> PID 3692</td><td><span class="badge badge-purple">Process</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
         <tr><td>Execution Flag</td><td><code>-windowstyle hidden</code></td><td><span class="badge badge-orange">Behavior</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
         <tr><td>Target Process</td><td><code>thunderbird.exe</code> (credential theft target)</td><td><span class="badge badge-purple">Process</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
-        <tr><td>Suspect User</td><td><code>Elom</code></td><td><span class="badge badge-yellow">Identity</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Suspect User</td><td><code>Elon</code></td><td><span class="badge badge-yellow">Identity</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
         <tr><td>C2 Port</td><td><code>8888</code> (WebDAV)</td><td><span class="badge badge-blue">Network</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
       </tbody>
     </table>
