@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HawkEye — The Accountant, The Invoice, and The Keylogger | WizB</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #0f1318;
+    --surface2: #151b22;
+    --border: #1e2730;
+    --accent: #00b4d8;
+    --accent2: #00d4aa;
+    --accent3: #ff4757;
+    --accent4: #ffd32a;
+    --text: #c9d1d9;
+    --muted: #586069;
+    --heading: #e6edf3;
+    --red: #ff4757;
+    --yellow: #ffd32a;
+    --blue: #79b8ff;
+    --orange: #ff6b35;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 15px;
+    line-height: 1.75;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0,180,216,0.008) 2px, rgba(0,180,216,0.008) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  .back-bar {
+    background: rgba(10,12,15,0.9);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+
+  .back-bar a {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    text-decoration: none;
+    letter-spacing: 1px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: color 0.2s;
+  }
+
+  .back-bar a:hover { color: var(--accent); }
+
+  .hero {
+    position: relative;
+    padding: 60px 0;
+    text-align: center;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,180,216,0.09) 0%, transparent 70%);
+  }
+
+  .tag-line {
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    opacity: 0.8;
+  }
+
+  .hero h1 {
+    font-family: var(--sans);
+    font-size: clamp(28px, 5vw, 54px);
+    font-weight: 800;
+    color: var(--heading);
+    line-height: 1.15;
+    margin-bottom: 16px;
+    position: relative;
+  }
+
+  .hero h1 .acc  { color: var(--accent); }
+  .hero h1 .red  { color: var(--red); }
+  .hero h1 .yel  { color: var(--yellow); }
+
+  .hero-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 32px;
+    letter-spacing: 1px;
+  }
+
+  .meta-strip {
+    display: inline-flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    justify-content: center;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .meta-strip span { display: flex; align-items: center; gap: 6px; }
+  .meta-strip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+  .section { padding: 56px 0; border-bottom: 1px solid var(--border); }
+
+  .section-num {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+
+  h2 {
+    font-family: var(--sans);
+    font-size: clamp(20px, 3vw, 28px);
+    font-weight: 700;
+    color: var(--heading);
+    margin-bottom: 20px;
+    line-height: 1.3;
+  }
+
+  h3 {
+    font-family: var(--sans);
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--heading);
+    margin: 32px 0 14px;
+  }
+
+  p { margin-bottom: 16px; color: var(--text); }
+
+  .alert {
+    border-left: 3px solid var(--accent);
+    background: rgba(0,180,216,0.05);
+    padding: 16px 20px;
+    margin: 28px 0;
+    border-radius: 0 6px 6px 0;
+    font-size: 13px;
+  }
+
+  .alert.warn   { border-color: var(--orange); background: rgba(255,107,53,0.06); }
+  .alert.danger { border-color: var(--red);    background: rgba(255,71,87,0.06);  }
+  .alert.intel  { border-color: #a78bfa;       background: rgba(124,92,191,0.06); }
+  .alert.yellow { border-color: var(--yellow); background: rgba(255,211,42,0.05); }
+
+  .alert-title {
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    color: var(--accent);
+  }
+
+  .alert.warn   .alert-title { color: var(--orange); }
+  .alert.danger .alert-title { color: var(--red); }
+  .alert.intel  .alert-title { color: #a78bfa; }
+  .alert.yellow .alert-title { color: var(--yellow); }
+
+  .terminal {
+    background: #060809;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 24px 0;
+    overflow: hidden;
+  }
+
+  .terminal-header {
+    background: var(--surface2);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .terminal-dots { display: flex; gap: 6px; }
+  .terminal-dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .terminal-dots .r { background: #ff5f57; }
+  .terminal-dots .y { background: #febc2e; }
+  .terminal-dots .g { background: #28c840; }
+  .terminal-title { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+
+  .terminal-body {
+    padding: 20px;
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-x: auto;
+  }
+
+  .cmd     { color: #79b8ff; }
+  .out     { color: #85e89d; }
+  .comment { color: var(--muted); font-style: italic; }
+  .hi      { color: var(--yellow); }
+  .path    { color: #d2a8ff; }
+  .red-txt { color: var(--red); }
+  .grn-txt { color: var(--accent2); }
+  .cyn-txt { color: var(--accent); }
+  .ora-txt { color: var(--orange); }
+
+  .findings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin: 24px 0;
+  }
+
+  .finding-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .finding-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .finding-card.cyan::before   { background: var(--accent); }
+  .finding-card.green::before  { background: var(--accent2); }
+  .finding-card.red::before    { background: var(--red); }
+  .finding-card.yellow::before { background: var(--yellow); }
+  .finding-card.orange::before { background: var(--orange); }
+  .finding-card.blue::before   { background: var(--blue); }
+
+  .finding-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .finding-value { font-size: 13px; font-weight: 700; color: var(--heading); word-break: break-all; line-height: 1.4; }
+
+  /* Attack chain */
+  .attack-chain { display: flex; flex-direction: column; margin: 28px 0; }
+  .chain-step { display: flex; gap: 16px; align-items: flex-start; }
+  .chain-left { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; width: 36px; }
+  .chain-num {
+    width: 32px; height: 32px; border-radius: 6px;
+    background: var(--accent); color: var(--bg);
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .chain-num.red    { background: var(--red); color: #fff; }
+  .chain-num.yellow { background: var(--yellow); color: #000; }
+  .chain-num.orange { background: var(--orange); color: #fff; }
+  .chain-num.green  { background: var(--accent2); color: #000; }
+
+  .chain-connector { width: 2px; flex: 1; min-height: 24px; background: var(--border); margin: 4px 0; }
+  .chain-content { flex: 1; padding-bottom: 28px; }
+  .chain-step:last-child .chain-content { padding-bottom: 0; }
+  .chain-title { font-family: var(--sans); font-weight: 700; color: var(--heading); font-size: 15px; margin-bottom: 6px; margin-top: 4px; }
+  .chain-desc  { font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+  .chain-tag {
+    display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 3px;
+    font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-top: 8px;
+    background: rgba(0,180,216,0.1); color: var(--accent); border: 1px solid rgba(0,180,216,0.25);
+  }
+  .chain-tag.red    { background: rgba(255,71,87,0.1);  color: var(--red);    border-color: rgba(255,71,87,0.25);  }
+  .chain-tag.yellow { background: rgba(255,211,42,0.1); color: var(--yellow); border-color: rgba(255,211,42,0.25); }
+  .chain-tag.orange { background: rgba(255,107,53,0.1); color: var(--orange); border-color: rgba(255,107,53,0.25); }
+  .chain-tag.green  { background: rgba(0,212,170,0.1);  color: var(--accent2);border-color: rgba(0,212,170,0.25);  }
+
+  /* Credential dump box */
+  .cred-box {
+    background: #060809;
+    border: 1px solid rgba(255,71,87,0.3);
+    border-radius: 8px;
+    padding: 24px;
+    margin: 24px 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cred-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--red), var(--orange));
+  }
+
+  .cred-title {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 16px;
+    font-weight: 700;
+  }
+
+  .cred-entry {
+    border-bottom: 1px solid var(--border);
+    padding: 12px 0;
+    font-size: 12px;
+  }
+
+  .cred-entry:last-child { border-bottom: none; }
+
+  .cred-service { color: var(--accent); font-weight: 700; font-size: 11px; letter-spacing: 1px; margin-bottom: 6px; }
+  .cred-row { display: flex; gap: 16px; margin: 3px 0; }
+  .cred-key { color: var(--muted); min-width: 80px; }
+  .cred-val { color: var(--heading); }
+  .cred-val.red { color: var(--red); }
+
+  /* Reveal box */
+  .reveal-box {
+    background: linear-gradient(135deg, rgba(255,71,87,0.07), rgba(0,180,216,0.05));
+    border: 1px solid rgba(255,71,87,0.3);
+    border-radius: 10px;
+    padding: 28px;
+    margin: 28px 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .reveal-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--red), var(--accent));
+  }
+
+  .reveal-title {
+    font-family: var(--sans);
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--heading);
+    margin-bottom: 14px;
+  }
+
+  /* MITRE grid */
+  .mitre-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 24px 0; }
+  .mitre-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px 18px; border-left: 3px solid #a78bfa;
+  }
+  .mitre-id   { font-size: 11px; color: #a78bfa; letter-spacing: 1px; font-weight: 700; margin-bottom: 6px; }
+  .mitre-name { font-size: 13px; color: var(--heading); font-weight: 600; margin-bottom: 4px; }
+  .mitre-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+  /* IOC table */
+  .ioc-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 24px 0; }
+  .ioc-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 520px; }
+  .ioc-table th {
+    background: var(--surface2); color: var(--accent);
+    font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border);
+  }
+  .ioc-table td { padding: 12px 16px; border-bottom: 1px solid rgba(30,39,48,0.5); vertical-align: top; }
+  .ioc-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; letter-spacing: 1px; font-weight: 700; text-transform: uppercase; }
+  .badge-red    { background: rgba(255,71,87,0.15);  color: var(--red);    border: 1px solid rgba(255,71,87,0.3);    }
+  .badge-cyan   { background: rgba(0,180,216,0.1);   color: var(--accent); border: 1px solid rgba(0,180,216,0.25);   }
+  .badge-green  { background: rgba(0,212,170,0.1);   color: var(--accent2);border: 1px solid rgba(0,212,170,0.25);   }
+  .badge-yellow { background: rgba(255,211,42,0.1);  color: var(--yellow); border: 1px solid rgba(255,211,42,0.25);  }
+  .badge-orange { background: rgba(255,107,53,0.1);  color: var(--orange); border: 1px solid rgba(255,107,53,0.3);   }
+  .badge-purple { background: rgba(124,92,191,0.15); color: #a78bfa;       border: 1px solid rgba(124,92,191,0.3);   }
+
+  code {
+    background: var(--surface2); padding: 2px 7px; border-radius: 4px;
+    font-family: var(--mono); font-size: 12px; color: #d2a8ff;
+    border: 1px solid var(--border);
+  }
+
+  .highlight-box {
+    background: linear-gradient(135deg, rgba(0,180,216,0.05), rgba(0,212,170,0.04));
+    border: 1px solid rgba(0,180,216,0.2);
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin: 28px 0;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
+  .cursor { display: inline-block; width: 8px; height: 15px; background: var(--accent); vertical-align: middle; animation: blink 1.2s infinite; margin-left: 2px; }
+
+  .footer { padding: 48px 0; text-align: center; }
+  .footer-sig  { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .footer-name { font-family: var(--sans); font-size: 18px; font-weight: 700; color: var(--accent); }
+
+  @media (max-width: 600px) {
+    .findings-grid { grid-template-columns: 1fr; }
+    .mitre-grid    { grid-template-columns: 1fr; }
+    .container { padding: 0 16px; }
+    .section   { padding: 40px 0; }
+    .hero      { padding: 40px 0; }
+    .terminal-body { font-size: 11px; }
+    h2 { font-size: 20px; }
+    .cred-row { flex-direction: column; gap: 2px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="back-bar">
+  <a href="./index.html">← Back to Writeups</a>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="container">
+    <div class="tag-line">CyberDefenders · HawkEye Lab · Network Forensics · PCAP Analysis</div>
+    <h1>
+      <span class="acc">HawkEye</span> —<br>
+      The Accountant,<br>
+      The Invoice, and The <span class="red">Keylogger</span>
+    </h1>
+    <div class="hero-sub">Full Network Forensics Walkthrough · Wireshark · SMTP Exfiltration · HawkEye Keylogger Reborn v9</div>
+    <div class="meta-strip">
+      <span><span class="dot"></span> PCAP Analysis</span>
+      <span><span class="dot"></span> Wireshark</span>
+      <span><span class="dot"></span> SMTP Exfiltration</span>
+      <span><span class="dot"></span> HawkEye Keylogger</span>
+      <span><span class="dot"></span> Credential Theft</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- 00 BACKGROUND -->
+<div class="section">
+  <div class="section-num">00 — Background</div>
+  <h2>The Case: An Invoice Nobody Ordered</h2>
+
+  <p>
+    An accountant at an organization received an email containing an invoice with a download link. It looked routine. It wasn't. Suspicious network traffic was detected shortly after the email was opened — possible exfiltration attempts flagged by the security team. A network capture file was handed to us for analysis: <code>stealer.pcap</code>.
+  </p>
+
+  <p>
+    This is a pure network forensics investigation. No disk image, no memory dump — just packets. Every answer is buried somewhere in 4003 of them. The challenge is knowing which protocols to filter, which streams to follow, and which bytes to decode.
+  </p>
+
+  <div class="alert">
+    <div class="alert-title">🔬 Investigation Approach</div>
+    Network forensics is about following the conversation. Packets tell a story — who talked to whom, when, what they said, and what changed hands. The analyst's job is to reconstruct that conversation from raw traffic and find the moment everything went wrong.
+  </div>
+
+  <div class="findings-grid">
+    <div class="finding-card cyan">
+      <div class="finding-label">PCAP File</div>
+      <div class="finding-value">stealer.pcap</div>
+    </div>
+    <div class="finding-card cyan">
+      <div class="finding-label">Total Packets</div>
+      <div class="finding-value">4,003</div>
+    </div>
+    <div class="finding-card cyan">
+      <div class="finding-label">Capture Start</div>
+      <div class="finding-value">2019-04-10 20:37:07</div>
+    </div>
+    <div class="finding-card cyan">
+      <div class="finding-label">Duration</div>
+      <div class="finding-value">201:03:41</div>
+    </div>
+    <div class="finding-card red">
+      <div class="finding-label">Malware</div>
+      <div class="finding-value">HawkEye Keylogger Reborn v9</div>
+    </div>
+    <div class="finding-card red">
+      <div class="finding-label">Victim</div>
+      <div class="finding-value">roman.mcguire @ Beijing-5cd1-PC</div>
+    </div>
+  </div>
+</div>
+
+<!-- 01 NETWORK TRIAGE -->
+<div class="section">
+  <div class="section-num">01 — Network Triage</div>
+  <h2>Who Is On This Network?</h2>
+
+  <p>
+    Before chasing traffic, the first step is mapping the environment. Wireshark's Statistics → Endpoints revealed the private IP space in use, and DHCP filtering identified the machines by name.
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">wireshark — statistics → endpoints — private IPs</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># Private IP addresses identified on the network:</span></div>
+      <div><span class="out">10.4.10.2    <span class="comment">← gateway</span></span></div>
+      <div><span class="out">10.4.10.4    <span class="comment">← DNS server</span></span></div>
+      <div><span class="out">10.4.10.132  <span class="comment">← most active machine</span></span></div>
+      <div><span class="out">10.4.10.255  <span class="comment">← broadcast</span></span></div>
+      <br>
+      <div><span class="comment"># Most active computer by packet count:</span></div>
+      <div><span class="out">MAC: <span class="hi">00:08:02:1C:47:ae</span></span></div>
+      <div><span class="comment"># MAC lookup → Manufacturer: Hewlett-Packard (HP)</span></div>
+      <div><span class="comment"># HQ: 1501 Page Mill Road, Palo Alto, California, USA</span></div>
+      <br>
+      <div><span class="comment"># DHCP filter → hostname of most active machine:</span></div>
+      <div><span class="out">Hostname: <span class="red-txt">Beijing-5cd1-PC</span> [10.4.10.132]</span></div>
+      <br>
+      <div><span class="comment"># DNS filter → DNS server:</span></div>
+      <div><span class="out">DNS Server: <span class="hi">10.4.10.4</span></span></div>
+    </div>
+  </div>
+
+  <div class="alert yellow">
+    <div class="alert-title">🖥️ Beijing-5cd1-PC</div>
+    The most active machine on the network — the one sending the most traffic — has a hostname suggesting it's registered to a user in Beijing. This is <strong>roman.mcguire</strong>'s workstation. Everything we're about to find flows from this machine.
+  </div>
+</div>
+
+<!-- 02 INITIAL INFECTION -->
+<div class="section">
+  <div class="section-num">02 — The Infection Vector</div>
+  <h2>The Invoice That Started Everything</h2>
+
+  <h3>The Suspicious DNS Query</h3>
+  <p>
+    Filtering DNS traffic revealed a query that stood out immediately. At packet 204, Beijing-5cd1-PC queried a domain that had no business being contacted from a corporate workstation:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">wireshark — dns filter — suspicious query</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># Packet 204 — DNS query from victim:</span></div>
+      <div><span class="out">Query: <span class="red-txt">proforma-invoices.com</span></span></div>
+      <br>
+      <div><span class="comment"># Packet 206 — DNS response:</span></div>
+      <div><span class="out">Resolved IP: <span class="hi">217.182.138.150</span></span></div>
+      <br>
+      <div><span class="comment"># IP geolocation lookup:</span></div>
+      <div><span class="out">Location: <span class="hi">Hauts-de-France, France</span></span></div>
+      <div><span class="out">City:      Roubaix (consistent across multiple lookup tools)</span></div>
+      <div><span class="comment"># A French-hosted domain serving what appears to be invoice content</span></div>
+    </div>
+  </div>
+
+  <h3>The Malicious Download</h3>
+  <p>
+    Filtering HTTP traffic and using Wireshark's Export Objects feature to list all files transferred over HTTP revealed the smoking gun. Buried in the HTTP object list was an executable masquerading as an invoice document:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">wireshark — file → export objects → http</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># Malicious file identified in HTTP object list:</span></div>
+      <div><span class="out">Filename: <span class="red-txt">tkraw_Protected99.exe</span></span></div>
+      <div><span class="out">Source:   <span class="hi">proforma-invoices.com</span></span></div>
+      <div><span class="out">MD5:      <span class="hi">718265a0810e303866ce2a2534499a267</span></span></div>
+      <br>
+      <div><span class="comment"># Analyzing the download packet (packet 3155):</span></div>
+      <div><span class="out">Server:   <span class="hi">LiteSpeed Software</span></span></div>
+      <div><span class="out">Size:     2,025,472 bytes (~2MB)</span></div>
+      <br>
+      <div><span class="comment"># HTTP User-Agent from victim's requests:</span></div>
+      <div><span class="out">OS: <span class="hi">Windows NT 6.1</span> (Windows 7)</span></div>
+    </div>
+  </div>
+
+  <div class="alert warn">
+    <div class="alert-title">⚠️ .exe Disguised as Invoice</div>
+    <code>tkraw_Protected99.exe</code> — a Windows executable served from a domain named to look like a legitimate invoice portal. The accountant downloaded and executed what they believed was an invoice document. Instead they executed a keylogger that would spend the next several hours silently harvesting every credential on their machine.
+  </div>
+
+  <h3>The Malware Checks In</h3>
+  <p>
+    Immediately after the download completed, Beijing-5cd1-PC made an unusual request that reveals the malware's first action after execution:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">post-execution — malware beacon</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># Immediately after tkraw_Protected99.exe executes:</span></div>
+      <div><span class="out">DNS Query: <span class="red-txt">bot.whatismyipaddress.com</span></span></div>
+      <div><span class="out">Response:  <span class="hi">173.66.146.112</span></span></div>
+      <br>
+      <div><span class="comment"># The malware is checking the victim's public IP</span></div>
+      <div><span class="comment"># This information is sent back to the attacker</span></div>
+      <div><span class="comment"># Used for target profiling and further escalation planning</span></div>
+      <br>
+      <div><span class="comment"># Victim's public IP confirmed: 173.66.146.112</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 03 SMTP EXFILTRATION -->
+<div class="section">
+  <div class="section-num">03 — The Exfiltration Channel</div>
+  <h2>SMTP — Credentials Flying Out Every 10 Minutes</h2>
+
+  <p>
+    Filtering for SMTP traffic revealed the exfiltration mechanism. The malware was not using a custom C2 protocol or encrypted channel — it was using plain email to send stolen data to an attacker-controlled address. Simple, effective, and easy to miss in environments that don't monitor outbound SMTP.
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">wireshark — smtp filter — exfiltration traffic</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># SMTP traffic destination:</span></div>
+      <div><span class="out">C2 Email Server: <span class="red-txt">23.229.162.69</span></span></div>
+      <div><span class="out">Location:        United States, Arizona (GoDaddy hosted)</span></div>
+      <div><span class="out">Server:          <span class="hi">p3plcpnl0413.prod.phx3.secureserver.net</span></span></div>
+      <div><span class="out">MTA:             Exim 4.91</span></div>
+      <br>
+      <div><span class="comment"># SMTP authentication — attacker's email account:</span></div>
+      <div><span class="out">EHLO:     <span class="hi">Beijing-5cd1-PC</span> <span class="comment">← victim's hostname identifying itself</span></span></div>
+      <div><span class="out">MAIL FROM: <span class="red-txt">sales.del@macwinlogistics.in</span></span></div>
+      <div><span class="out">RCPT TO:   <span class="red-txt">sales.del@macwinlogistics.in</span></span></div>
+      <div><span class="comment"># Sending to itself — attacker-controlled inbox</span></div>
+      <br>
+      <div><span class="comment"># SMTP password — base64 encoded in traffic:</span></div>
+      <div><span class="out">Encoded:  <span class="hi">U2FsZXNAMjM=</span></span></div>
+      <div><span class="out">Decoded:  <span class="red-txt">Sales@23</span></span></div>
+    </div>
+  </div>
+
+  <div class="alert warn">
+    <div class="alert-title">⏱️ Exfiltration Every 10 Minutes</div>
+    Analyzing the EHLO command timestamps across SMTP sessions revealed the exfiltration frequency: <strong>604.356451 seconds ≈ 10 minutes</strong>. HawkEye was running on a timer, bundling stolen credentials and sending them to the attacker's inbox every 10 minutes like clockwork. Every credential harvested between intervals was queued and sent in the next batch.
+  </div>
+</div>
+
+<!-- 04 THE REVEAL -->
+<div class="section">
+  <div class="section-num">04 — The Reveal</div>
+  <h2>Following the TCP Stream — HawkEye Unmasked</h2>
+
+  <p>
+    Following the TCP stream of the SMTP packets revealed the email body — base64 encoded, as expected for MIME email content. Decoding it is where everything became clear.
+  </p>
+
+  <div class="reveal-box">
+    <div class="reveal-title">HawkEye Keylogger — Reborn v9</div>
+    <p style="font-size:13px;line-height:1.9;color:var(--text);margin-bottom:16px;">
+      The decoded email body opened with a header that identified the malware immediately:
+    </p>
+    <div class="terminal" style="margin:0;">
+      <div class="terminal-header">
+        <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+        <div class="terminal-title">base64 decoded — smtp email body</div>
+      </div>
+      <div class="terminal-body">
+        <div><span class="red-txt">HawkEye Keylogger - Reborn v9</span></div>
+        <div><span class="out">Passwords Logs</span></div>
+        <div><span class="out">roman.mcguire \ <span class="hi">BEIJING-5CD1-PC</span></span></div>
+        <div style="margin-top:12px;"><span class="comment"># Followed by complete credential dump...</span></div>
+      </div>
+    </div>
+    <p style="font-size:13px;line-height:1.8;color:var(--text);margin-top:16px;margin-bottom:0;">
+      <strong style="color:var(--heading);">HawkEye Keylogger Reborn v9</strong> is a well-documented commercial infostealer and keylogger that has been active since at least 2013 and has gone through multiple "reborn" versions with expanding capability. It is specifically designed to harvest credentials from browsers, email clients, FTP clients, and any other application that stores login data. The "v9" variant represents one of its most feature-rich iterations — targeting browser password databases directly, logging keystrokes, capturing screenshots, and exfiltrating everything via SMTP on a configurable timer.
+    </p>
+  </div>
+</div>
+
+<!-- 05 CREDENTIAL DUMP -->
+<div class="section">
+  <div class="section-num">05 — The Credential Dump</div>
+  <h2>What roman.mcguire Lost</h2>
+
+  <p>
+    The decoded email body contained a complete credential report — every saved password HawkEye could find on the machine. The scope of what was stolen makes clear why financial institution workstations are high-value targets.
+  </p>
+
+  <div class="cred-box">
+    <div class="cred-title">🔓 Stolen Credentials — roman.mcguire \ BEIJING-5CD1-PC</div>
+
+    <div class="cred-entry">
+      <div class="cred-service">🏦 Bank of America</div>
+      <div class="cred-row"><span class="cred-key">Browser</span><span class="cred-val">Chrome</span></div>
+      <div class="cred-row"><span class="cred-key">Username</span><span class="cred-val red">roman.mcguire</span></div>
+      <div class="cred-row"><span class="cred-key">Password</span><span class="cred-val red">P@ssw0rd$</span></div>
+      <div class="cred-row"><span class="cred-key">Source</span><span class="cred-val">Chrome Login Data — C:\Users\roman.mcguire\AppData\Local\Google\Chrome\User Data\Default\Login Data</span></div>
+    </div>
+
+    <div class="cred-entry">
+      <div class="cred-service">📧 AOL Mail</div>
+      <div class="cred-row"><span class="cred-key">Browser</span><span class="cred-val">Internet Explorer 7.0–9.0</span></div>
+      <div class="cred-row"><span class="cred-key">Username</span><span class="cred-val red">roman.mcguire914@aol.com</span></div>
+      <div class="cred-row"><span class="cred-key">Password</span><span class="cred-val red">P@ssw0rd$</span></div>
+      <div class="cred-row"><span class="cred-key">URL</span><span class="cred-val">https://login.aol.com/account/challenge/password</span></div>
+    </div>
+
+    <div class="cred-entry">
+      <div class="cred-service">📮 Microsoft Outlook (POP3)</div>
+      <div class="cred-row"><span class="cred-key">Application</span><span class="cred-val">MS Outlook 2002/2003/2007/2010</span></div>
+      <div class="cred-row"><span class="cred-key">Email</span><span class="cred-val red">roman.mcguire@pizzajukebox.com</span></div>
+      <div class="cred-row"><span class="cred-key">Server</span><span class="cred-val">pop.pizzajukebox.com:995</span></div>
+      <div class="cred-row"><span class="cred-key">SMTP</span><span class="cred-val">smtp.pizzajukebox.com:587</span></div>
+      <div class="cred-row"><span class="cred-key">Password</span><span class="cred-val red">P@ssw0rd$</span></div>
+      <div class="cred-row"><span class="cred-key">Secured</span><span class="cred-val red">No</span></div>
+    </div>
+  </div>
+
+  <div class="alert danger">
+    <div class="alert-title">💀 Password Reuse — The Force Multiplier</div>
+    Every single credential uses the same password: <code>P@ssw0rd$</code>. Bank of America. AOL. Outlook. One stolen password unlocks everything. This is exactly why credential stuffing attacks are so devastatingly effective — attackers know that most people reuse passwords across accounts. HawkEye didn't need to crack anything. It just read the Chrome Login Data file and walked away with the keys to roman.mcguire's digital life.
+  </div>
+
+  <h3>How HawkEye Got the Browser Passwords</h3>
+  <p>
+    The Chrome credentials weren't harvested via keylogging — they were extracted directly from Chrome's saved password database. Chrome stores credentials in an SQLite database at a predictable, well-known location:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="terminal-title">chrome credential extraction path</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="comment"># Chrome Login Data file location:</span></div>
+      <div><span class="path">C:\Users\roman.mcguire\AppData\Local\Google\Chrome\</span></div>
+      <div><span class="path">User Data\Default\<span class="red-txt">Login Data</span></span></div>
+      <br>
+      <div><span class="comment"># Login Data is an SQLite database</span></div>
+      <div><span class="comment"># Contains: URLs, usernames, encrypted passwords</span></div>
+      <div><span class="comment"># Encryption uses Windows DPAPI — tied to the user session</span></div>
+      <div><span class="comment"># Malware running in user context can decrypt it trivially</span></div>
+      <br>
+      <div><span class="comment"># This is why browser-saved passwords are a security risk:</span></div>
+      <div><span class="comment"># Any malware running as the user can access them</span></div>
+      <div><span class="comment"># No additional authentication required</span></div>
+    </div>
+  </div>
+
+  <div class="alert intel">
+    <div class="alert-title">🧠 Browser Password Storage Risk</div>
+    This is a critical lesson that applies far beyond this case. Modern browsers make it convenient to save passwords — but that convenience comes with a serious security tradeoff. Any malware running under the user's account can access the Login Data file and decrypt its contents using the Windows Data Protection API (DPAPI). HawkEye, StrelaStealer, RedLine, and dozens of other infostealers specifically target this file as their primary credential source. <strong>A dedicated password manager with a master password</strong> — combined with MFA — provides protection that browser-saved passwords simply cannot.
+  </div>
+</div>
+
+<!-- 06 ATTACK CHAIN -->
+<div class="section">
+  <div class="section-num">06 — Full Attack Chain</div>
+  <h2>Reconstructing What Happened</h2>
+
+  <div class="attack-chain">
+    <div class="chain-step">
+      <div class="chain-left"><div class="chain-num">01</div><div class="chain-connector"></div></div>
+      <div class="chain-content">
+        <div class="chain-title">Phishing Email Delivered</div>
+        <div class="chain-desc">roman.mcguire receives an email containing an invoice with a download link. The email appears legitimate — an invoice is expected behavior for an accountant. No red flags at the email level.</div>
+        <span class="chain-tag">T1566.002 — Spearphishing Link</span>
+      </div>
+    </div>
+    <div class="chain-step">
+      <div class="chain-left"><div class="chain-num">02</div><div class="chain-connector"></div></div>
+      <div class="chain-content">
+        <div class="chain-title">DNS Query — proforma-invoices.com</div>
+        <div class="chain-desc">Beijing-5cd1-PC resolves proforma-invoices.com → 217.182.138.150 (Roubaix, France). The victim clicks the download link.</div>
+        <span class="chain-tag">T1583.001 — Acquire Infrastructure: Domains</span>
+      </div>
+    </div>
+    <div class="chain-step">
+      <div class="chain-left"><div class="chain-num orange">03</div><div class="chain-connector"></div></div>
+      <div class="chain-content">
+        <div class="chain-title">tkraw_Protected99.exe Downloaded and Executed</div>
+        <div class="chain-desc">2MB executable served by LiteSpeed server downloads to the victim's machine. Victim opens it believing it is an invoice. HawkEye Keylogger Reborn v9 executes under roman.mcguire's session.</div>
+        <span class="chain-tag orange">T1204.002 — User Execution: Malicious File</span>
+      </div>
+    </div>
+    <div class="chain-step">
+      <div class="chain-left"><div class="chain-num orange">04</div><div class="chain-connector"></div></div>
+      <div class="chain-content">
+        <div class="chain-title">Malware Checks Victim's Public IP</div>
+        <div class="chain-desc">Immediately after execution, HawkEye queries bot.whatismyipaddress.com — identifies victim's public IP as 173.66.146.112 and sends this back to the attacker for target profiling.</div>
+        <span class="chain-tag orange">T1016 — System Network Configuration Discovery</span>
+      </div>
+    </div>
+    <div class="chain-step">
+      <div class="chain-left"><div class="chain-num red">05</div><div class="chain-connector"></div></div>
+      <div class="chain-content">
+        <div class="chain-title">Credential Harvesting Begins</div>
+        <div class="chain-desc">HawkEye reads Chrome's Login Data SQLite database — Bank of America, AOL credentials extracted. Outlook profile credentials harvested. Keylogger active for any new credentials entered.</div>
+        <span class="chain-tag red">T1555.003 — Credentials from Web Browsers</span>
+      </div>
+    </div>
+    <div class="chain-step">
+      <div class="chain-left"><div class="chain-num red">06</div></div>
+      <div class="chain-content">
+        <div class="chain-title">SMTP Exfiltration — Every 10 Minutes</div>
+        <div class="chain-desc">Every ~604 seconds, HawkEye authenticates to p3plcpnl0413.prod.phx3.secureserver.net as sales.del@macwinlogistics.in (password: Sales@23) and emails a complete credential dump to the attacker's inbox in Arizona.</div>
+        <span class="chain-tag red">T1048.003 — Exfiltration Over Unencrypted Protocol</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 07 MITRE -->
+<div class="section">
+  <div class="section-num">07 — MITRE ATT&CK Mapping</div>
+  <h2>Techniques Observed</h2>
+
+  <div class="mitre-grid">
+    <div class="mitre-card">
+      <div class="mitre-id">T1566.002</div>
+      <div class="mitre-name">Spearphishing Link</div>
+      <div class="mitre-desc">Invoice email with malicious download link targeting accountant</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1204.002</div>
+      <div class="mitre-name">User Execution: Malicious File</div>
+      <div class="mitre-desc">Victim executes tkraw_Protected99.exe believing it to be an invoice</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1016</div>
+      <div class="mitre-name">System Network Configuration Discovery</div>
+      <div class="mitre-desc">Malware queries whatismyipaddress.com to identify victim's public IP</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1555.003</div>
+      <div class="mitre-name">Credentials from Web Browsers</div>
+      <div class="mitre-desc">Chrome Login Data SQLite database extracted and decrypted</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1555</div>
+      <div class="mitre-name">Credentials from Password Stores</div>
+      <div class="mitre-desc">Outlook and AOL credentials harvested from application stores</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1056.001</div>
+      <div class="mitre-name">Keylogging</div>
+      <div class="mitre-desc">HawkEye logs keystrokes to capture credentials entered after infection</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1048.003</div>
+      <div class="mitre-name">Exfiltration Over Unencrypted Protocol</div>
+      <div class="mitre-desc">Plaintext SMTP used to exfiltrate credentials every ~10 minutes</div>
+    </div>
+    <div class="mitre-card">
+      <div class="mitre-id">T1583.001</div>
+      <div class="mitre-name">Acquire Infrastructure: Domains</div>
+      <div class="mitre-desc">proforma-invoices.com registered to host malware delivery</div>
+    </div>
+  </div>
+</div>
+
+<!-- 08 IOC -->
+<div class="section">
+  <div class="section-num">08 — IOC Summary</div>
+  <h2>Indicators of Compromise</h2>
+
+  <div class="ioc-wrap">
+    <table class="ioc-table">
+      <thead>
+        <tr><th>Indicator</th><th>Value</th><th>Type</th><th>Confidence</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Malware Delivery Domain</td><td><code>proforma-invoices.com</code></td><td><span class="badge badge-red">Domain</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Delivery Server IP</td><td><code>217.182.138.150</code> (Roubaix, France)</td><td><span class="badge badge-orange">IP</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Malicious File</td><td><code>tkraw_Protected99.exe</code></td><td><span class="badge badge-red">File</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>MD5 Hash</td><td><code>718265a0810e303866ce2a2534499a267</code></td><td><span class="badge badge-cyan">Hash</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>C2 Exfil Server</td><td><code>23.229.162.69</code> (Arizona, GoDaddy)</td><td><span class="badge badge-orange">IP</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>C2 Email Address</td><td><code>sales.del@macwinlogistics.in</code></td><td><span class="badge badge-red">Email</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>C2 SMTP Password</td><td><code>Sales@23</code> (decoded from U2FsZXNAMjM=)</td><td><span class="badge badge-yellow">Credential</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Malware Family</td><td>HawkEye Keylogger Reborn v9</td><td><span class="badge badge-orange">Attribution</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Victim Machine</td><td><code>Beijing-5cd1-PC</code> [10.4.10.132]</td><td><span class="badge badge-cyan">Host</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Victim Public IP</td><td><code>173.66.146.112</code></td><td><span class="badge badge-orange">IP</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>IP Recon Domain</td><td><code>bot.whatismyipaddress.com</code></td><td><span class="badge badge-yellow">Domain</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+        <tr><td>Exfil Frequency</td><td>~604 seconds (≈ 10 minutes)</td><td><span class="badge badge-purple">Behavior</span></td><td><span class="badge badge-red">HIGH</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 09 TAKEAWAYS -->
+<div class="section">
+  <div class="section-num">09 — Takeaways</div>
+  <h2>What This Investigation Teaches Us</h2>
+
+  <h3>Accountants Are High-Value Targets</h3>
+  <p>
+    This wasn't a random phishing campaign. The lure was an invoice — exactly what an accountant opens dozens of every week. The attacker understood their target's workflow. Spearphishing works because it matches the context of the victim's daily activity. A generic phishing email triggers suspicion. An invoice link does not.
+  </p>
+
+  <h3>Network Forensics Reveals What Endpoint Tools Miss</h3>
+  <p>
+    The SMTP exfiltration was plaintext, unencrypted, and sent on a 10-minute timer. Any network monitoring solution logging outbound SMTP connections from a workstation — something that should never originate email — would have caught this immediately. Endpoint detection is essential, but network visibility catches the things that slip past it.
+  </p>
+
+  <h3>Browser-Saved Passwords Are a Single Point of Failure</h3>
+  <p>
+    HawkEye didn't need to keylog a single character of roman.mcguire's Bank of America password. It read the Chrome Login Data file and walked away with everything. The browser's convenience feature — save this password — became the attacker's convenience feature. A dedicated password manager with a master password, combined with MFA on financial accounts, would have made this credential harvest useless even after the infection.
+  </p>
+
+  <h3>Password Reuse Turns One Breach Into Many</h3>
+  <p>
+    <code>P@ssw0rd$</code>. Bank of America. AOL. Outlook. Same password, every account. This is the force multiplier that makes infostealers so devastating — a single successful harvest doesn't compromise one account. It compromises everything the victim has ever saved a password for. One stolen credential becomes a skeleton key.
+  </p>
+
+  <h3>Follow the Stream, Find the Truth</h3>
+  <p>
+    The base64 encoded email body looked like noise. Following the TCP stream and decoding it revealed the malware's identity, the victim's machine name, and a complete credential dump. In network forensics, the most valuable data is often hidden inside encoded payloads inside mundane-looking protocols. Always follow the stream.
+  </p>
+
+  <div class="highlight-box" style="margin-top:32px;">
+    <div style="font-family:var(--sans);font-size:15px;font-weight:700;color:var(--heading);margin-bottom:10px;">Tools Used — This Investigation</div>
+    <div style="font-size:13px;line-height:2.2;color:var(--text);">
+      <code>Wireshark</code> — PCAP analysis, protocol filtering, TCP stream following, object export<br>
+      <code>Statistics → Endpoints</code> — Network host enumeration<br>
+      <code>Export Objects → HTTP</code> — Malicious file identification<br>
+      <code>Base64 Decode</code> — SMTP payload decoding revealing HawkEye identity<br>
+      <code>macvendors.com</code> — MAC address manufacturer lookup<br>
+      <code>iplocation.net</code> — IP geolocation cross-verification<br>
+      <code>MITRE ATT&CK</code> — TTP mapping and technique identification<br>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <div class="footer-sig">Written as a walkthrough for CyberDefenders HawkEye Lab by</div>
+  <div class="footer-name">WizB</div>
+  <div style="font-size:11px;color:var(--muted);margin-top:8px;letter-spacing:1px;">DFIR · OSINT · NIT Silchar ECE<span class="cursor"></span></div>
+</div>
+
+</div>
+</body>
+</html>
